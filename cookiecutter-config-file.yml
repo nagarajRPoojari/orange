@@ -1,0 +1,16 @@
+# This project was generated using a Cookiecutter template:
+#       https://github.com/notsatan/go-template
+
+cookiecutter_inputs:
+  project_name: "orange"
+  go_module_path: "github.com/nagarajRPoojari/orange"
+  license_owner: "Nagaraj Poojari"
+  base_branch: "main"
+  contact_email: ""
+  project_description: "simple, fast, distributed sql db"
+  github_specific_features: "y"
+  private_project: "n"
+  use_codecov: "y"
+  use_precommit: "y"
+  go_version: "1.21"
+  license: "MIT"

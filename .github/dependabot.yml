@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+
+    # Auto assign PRs raised to this account on Github
+    assignees:
+      - "nagarajRPoojari"
+
+    reviewers:
+      - "nagarajRPoojari"
+
+    # Check for updates to dependencies once a week - Saturday
+    schedule:
+      interval: "weekly"
+      day: "saturday"
