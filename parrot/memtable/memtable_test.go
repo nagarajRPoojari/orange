@@ -24,8 +24,10 @@ import (
 func TestMemtable_Write_And_Read_In_Mem(t *testing.T) {
 	log.Disable()
 
+	const MemtableSoftLimit = 1024 * 1024
+
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: t.TempDir()})
-	mts := NewMemtableStore[types.StringKey, types.StringValue](mf, MemtableOpts{MemtableSoftLimit: 1024, QueueHardLimit: 10})
+	mts := NewMemtableStore[types.StringKey, types.StringValue](mf, MemtableOpts{MemtableSoftLimit: MemtableSoftLimit, QueueHardLimit: 10})
 	k, v := types.StringKey{K: "key-0"}, types.StringValue{V: "val-0"}
 	mts.Write(k, v)
 
@@ -47,15 +49,17 @@ func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: t.TempDir()})
 	mf.Load()
 
+	const MemtableSoftLimit = 1024 * 1024
+
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	go mf.Sync(ctx)
 
-	mts := NewMemtableStore[types.IntKey, types.IntValue](mf, MemtableOpts{MemtableSoftLimit: 1024})
+	mts := NewMemtableStore[types.IntKey, types.IntValue](mf, MemtableOpts{MemtableSoftLimit: MemtableSoftLimit})
 	d := types.IntValue{V: 0}
 
 	// overflow memtable to trigger flush
-	for i := range int(1024 / d.SizeOf()) {
+	for i := range int(MemtableSoftLimit / d.SizeOf()) {
 		mts.Write(types.IntKey{K: i}, types.IntValue{V: int32(i)})
 	}
 
@@ -87,7 +91,7 @@ func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 	log.Disable()
 
-	const MEMTABLE_THRESHOLD = 1024
+	const MEMTABLE_THRESHOLD = 1024 * 1024
 	const MAX_CONCURRENT_READ_ROUTINES = 5000
 
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: t.TempDir()})
@@ -147,7 +151,7 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	log.Disable()
 
-	const MEMTABLE_THRESHOLD = 1024 * 2
+	const MEMTABLE_THRESHOLD = 1024 * 2 * 1024
 	const MAX_CONCURRENT_READ_ROUTINES = 500
 
 	temp := t.TempDir()
@@ -202,7 +206,7 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 func TestMemtable_Rollback(t *testing.T) {
 	log.Disable()
 
-	const MEMTABLE_THRESHOLD = 1024 * 2
+	const MEMTABLE_THRESHOLD = 1024 * 2 * 1024
 	const MAX_CONCURRENT_READ_ROUTINES = 500
 
 	temp := t.TempDir()
