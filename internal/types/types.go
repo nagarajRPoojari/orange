@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 // basic types
 
 type _ID intKey
@@ -24,6 +26,22 @@ type STRING stringValue
 
 // byte
 type BYTE byteValue
+
+// date & time
+type DATE dateValue
+type TIME timeValue
+type DATETIME datetimeValue
+type TIMESTAMP timestampValue
+
+// decimal / numeric
+type DECIMAL decimalValue
+type NUMERIC numericValue
+
+// uuid
+type UUID uuidValue
+
+// blob
+type BLOB blobValue
 
 type intKey struct {
 	K int
@@ -115,4 +133,68 @@ type byteValue struct {
 
 func (t byteValue) SizeOf() uintptr {
 	return 1
+}
+
+type dateValue struct {
+	V time.Time // usually stored as YYYY-MM-DD
+}
+
+func (t dateValue) SizeOf() uintptr {
+	return 4 // approximate size for a date-only (year, month, day)
+}
+
+type timeValue struct {
+	V time.Time // usually stored as HH:MM:SS
+}
+
+func (t timeValue) SizeOf() uintptr {
+	return 3 // approximate size (hour, min, sec)
+}
+
+type datetimeValue struct {
+	V time.Time
+}
+
+func (t datetimeValue) SizeOf() uintptr {
+	return 8 // standard size (date + time), depending on DB
+}
+
+type timestampValue struct {
+	V time.Time
+}
+
+func (t timestampValue) SizeOf() uintptr {
+	return 8 // similar to datetime
+}
+
+type decimalValue struct {
+	V string // to store arbitrary precision decimal as string
+}
+
+func (t decimalValue) SizeOf() uintptr {
+	return uintptr(len(t.V)) // depends on precision
+}
+
+type numericValue struct {
+	V string
+}
+
+func (t numericValue) SizeOf() uintptr {
+	return uintptr(len(t.V))
+}
+
+type uuidValue struct {
+	V [16]byte // UUID is 128 bits
+}
+
+func (t uuidValue) SizeOf() uintptr {
+	return 16
+}
+
+type blobValue struct {
+	V []byte
+}
+
+func (t blobValue) SizeOf() uintptr {
+	return uintptr(len(t.V))
 }
