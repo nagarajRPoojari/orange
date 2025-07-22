@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nagarajRPoojari/orange/src"
+	src "github.com/nagarajRPoojari/orange/internal"
 )
 
 func main() {
