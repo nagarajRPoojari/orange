@@ -67,8 +67,8 @@ func (t *FileWriter) Write(data []byte) {
 }
 
 type FileManager struct {
-	sharedFileReadersMap map[string]*FileReader
-	lockMap              map[string]*sync.Mutex
+	sharedFileReadersMap sync.Map
+	lockMap              sync.Map
 
 	// globalMu prevents multiple goroutines creating same instance
 	globalMu sync.Mutex
@@ -76,7 +76,8 @@ type FileManager struct {
 
 func newFileManager() *FileManager {
 	return &FileManager{
-		sharedFileReadersMap: map[string]*FileReader{},
+		sharedFileReadersMap: sync.Map{},
+		lockMap:              sync.Map{},
 	}
 }
 
@@ -117,16 +118,13 @@ func (t *FileManager) getOrCreateLock(path string) *sync.Mutex {
 	t.globalMu.Lock()
 	defer t.globalMu.Unlock()
 
-	if t.lockMap == nil {
-		t.lockMap = make(map[string]*sync.Mutex)
-	}
-
-	lock, ok := t.lockMap[path]
+	lock, ok := t.lockMap.Load(path)
 	if !ok {
 		lock = &sync.Mutex{}
-		t.lockMap[path] = lock
+		t.lockMap.LoadOrStore(path, lock)
 	}
-	return lock
+
+	return lock.(*sync.Mutex)
 }
 
 // OpenForRead utilizes mmap for multiple read only ops,
@@ -144,14 +142,14 @@ func (t *FileManager) OpenForRead(path string) (*FileReader, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	if reader, ok := t.sharedFileReadersMap[path]; ok {
-		return reader, nil
+	if reader, ok := t.sharedFileReadersMap.Load(path); ok {
+		return reader.(*FileReader), nil
 	}
 	reader, err := t.openForSharedRead(path)
 	if err != nil {
 		return nil, err
 	}
-	t.sharedFileReadersMap[path] = reader
+	t.sharedFileReadersMap.LoadOrStore(path, reader)
 
 	return reader, nil
 }

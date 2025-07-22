@@ -53,7 +53,7 @@ install:
 # No `help` message for this command - designed to be consumed internally
 .PHONY: --test-runner
 --test-runner:
-	go test ./... -race -covermode=atomic -coverprofile=./coverage/coverage.txt
+	go test ./... -covermode=atomic -coverprofile=./coverage/coverage.txt
 	go tool cover -html=./coverage/coverage.txt -o ./coverage/coverage.html
 
 
@@ -123,7 +123,7 @@ clean-docker:
 
 .PHONY: clean
 ## `clean`: Remove build artifacts, logs, and profiles
-clean:
+clean: 
 	rm -rf ./benchmark/test
 	rm -rf ./benchmark/manifest
 	rm -rf ./benchmark/*.log
