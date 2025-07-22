@@ -50,19 +50,6 @@ install:
 	go mod tidy
 
 
-.PHONY: codestyle
-## :
-## `codestyle`: Run code formatter(s)
-codestyle:
-	golangci-lint run --fix
-
-
-.PHONY: lint
-## `lint`: Run linters and check code-style
-lint:
-	golangci-lint run
-
-
 # No `help` message for this command - designed to be consumed internally
 .PHONY: --test-runner
 --test-runner:
@@ -87,12 +74,6 @@ fast-tests: --test-runner
 ## `slow-tests`: Selectively run slow tests
 slow-tests: export TEST_MODE=slow
 slow-tests: --test-runner
-
-
-.PHONY: test-suite
-## `test-suite`: Check code style, run linters and ALL tests
-test-suite: export TEST_MODE=complete
-test-suite: lint test
 
 
 .PHONY: run

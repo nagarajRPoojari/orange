@@ -5,6 +5,12 @@
 # Mac only
 .DS_Store/**
 
+.venv
+*.log
+*.prof
+*.db
+*.index
+
 # Ignore directories containing binaries generated and other stuff
 tmp/**
 bin/**
