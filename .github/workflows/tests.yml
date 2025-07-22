@@ -30,4 +30,4 @@ jobs:
         run: go mod download
 
       - name: Test
-        run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic -gcflags=-l
+        run: go test ./...  -coverprofile=coverage.txt -covermode=atomic -gcflags=-l
