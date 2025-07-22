@@ -30,11 +30,6 @@ const (
 	T_AND                 TokenType = "AND"
 	T_OR                  TokenType = "OR"
 
-	// Literals
-	T_IDENTIFIER TokenType = "IDENTIFIER"
-	T_INT        TokenType = "INT"
-	T_STRING     TokenType = "STRING"
-
 	// Special
 	T_EOF TokenType = "EOF"
 )

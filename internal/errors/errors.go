@@ -3,6 +3,7 @@ package errors
 import "fmt"
 
 const SQLParseError = SQLError("SQL parsing error")
+const SQLSyntaxError = SQLError("SQL syntax error")
 
 type SQLError string
 

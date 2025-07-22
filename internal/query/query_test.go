@@ -3,6 +3,7 @@ package query
 import (
 	"testing"
 
+	"github.com/nagarajRPoojari/orange/internal/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,6 +34,13 @@ func TestInsertParser(t *testing.T) {
 	got, err := NewParser(insertQ).Build()
 	assert.NotErrorIs(t, err, assert.AnError)
 	assert.Equal(t, expected, got)
+}
+
+func TestInvalidQuery(t *testing.T) {
+	insertQ := "INSERT INO users (id, name, age, team) VALUES (1, 'Alice', 30, 90)"
+
+	_, err := NewParser(insertQ).Build()
+	assert.ErrorIs(t, err, errors.SQLSyntaxError)
 }
 
 func TestSelectParser(t *testing.T) {

@@ -16,7 +16,7 @@ func NewParser(input string) *Parser {
 func (t *Parser) Build() (Query, error) {
 	stmt, err := sqlparser.Parse(t.input)
 	if err != nil {
-		panic(err)
+		return nil, errors.SQLSyntaxError
 	}
 
 	return parse(stmt)
