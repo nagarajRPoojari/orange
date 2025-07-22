@@ -34,9 +34,16 @@ jobs:
         echo "| Benchmark | Ops/sec |" > benchmark.md
         echo "|-----------|---------|" >> benchmark.md
 
-        make benchmark read > full_benchmark.log
-        make benchmark write >> full_benchmark.log
+        go test -bench=BenchmarkMemtable_Read -memprofile=mem.out -cpuprofile=cpu.out ./benchmark > full_benchmark.log
+        go test -bench=BenchmarkMemtable_Write_With_WAL -memprofile=mem.out -cpuprofile=cpu.out ./benchmark >> full_benchmark.log
+        rm -rf ./benchmark/test
+        rm -rf ./benchmark/manifest
+        rm -rf ./benchmark/*.log
+        rm -rf $(BIN_DIR)
+        rm -f ./benchmark.test
+        rm -f mem.out cpu.out goroutine.prof coverage/coverage.*
 
+        go test -bench=BenchmarkMemtable_Write_Without_WAL -memprofile=mem.out -cpuprofile=cpu.out ./benchmark >> full_benchmark.log
         awk '
           /^BenchmarkMemtable_/ { 
             match($1, /^Benchmark[^-]+/, m); 
