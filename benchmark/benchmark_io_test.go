@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	storage "github.com/nagarajRPoojari/orange/pkg/parrot"
-	"github.com/nagarajRPoojari/orange/pkg/parrot/utils/log"
+	storage "github.com/nagarajRPoojari/orange/parrot"
+	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 
-	"github.com/nagarajRPoojari/orange/pkg/parrot/memtable"
-	"github.com/nagarajRPoojari/orange/pkg/parrot/metadata"
-	"github.com/nagarajRPoojari/orange/pkg/parrot/types"
+	"github.com/nagarajRPoojari/orange/parrot/memtable"
+	"github.com/nagarajRPoojari/orange/parrot/metadata"
+	"github.com/nagarajRPoojari/orange/parrot/types"
 )
 
 const MILLION = 10_00_000
