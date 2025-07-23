@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nagarajRPoojari/orange/parrot/metadata"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +23,7 @@ import (
 func TestManifest_GetLevel(t *testing.T) {
 	type fields struct {
 		name string
-		lsm0 *LSM
+		lsm0 *metadata.LSM
 	}
 	type args struct {
 		l int
@@ -31,19 +32,19 @@ func TestManifest_GetLevel(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *Level
+		want    *metadata.Level
 		wantErr bool
 	}{
 		{
 			name:    "-1 level",
-			fields:  fields{name: "test", lsm0: NewLSM("test")},
+			fields:  fields{name: "test", lsm0: metadata.NewLSM("test")},
 			args:    args{-1},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "-1 level",
-			fields:  fields{name: "test", lsm0: NewLSM("test")},
+			fields:  fields{name: "test", lsm0: metadata.NewLSM("test")},
 			args:    args{10},
 			want:    nil,
 			wantErr: true,
@@ -51,9 +52,9 @@ func TestManifest_GetLevel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr := &Manifest{
-				name: tt.fields.name,
-				lsm0: tt.fields.lsm0,
+			tr := &metadata.Manifest{
+				Name: tt.fields.name,
+				LSM0: tt.fields.lsm0,
 			}
 			level, err := tr.GetLSM().GetLevel(tt.args.l)
 			if (err != nil) != tt.wantErr {
@@ -74,7 +75,7 @@ func TestManifest_Load(t *testing.T) {
 	const manifestFile = "manifest.json"
 	manifestPath := filepath.Join(tmpDir, "manifest", testName, manifestFile)
 
-	m := NewManifest(testName, ManifestOpts{Dir: tmpDir})
+	m := metadata.NewManifest(testName, metadata.ManifestOpts{Dir: tmpDir})
 	err := m.Load()
 	assert.NoError(t, err)
 
@@ -83,11 +84,11 @@ func TestManifest_Load(t *testing.T) {
 	assert.NoError(t, statErr)
 
 	// LSM object should be non-nil
-	assert.NotNil(t, m.lsm0)
+	assert.NotNil(t, m.LSM0)
 
 	// ---- Test case 2: file exists, should load data into LSM ----
 	// Simulate updated file content
-	lsmDataView := NewLSMView(testName)
+	lsmDataView := metadata.NewLSMView(testName)
 	lsmData := lsmDataView.ToLSM()
 
 	jsonData, err := json.Marshal(lsmDataView)
@@ -96,11 +97,11 @@ func TestManifest_Load(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Reload
-	m2 := NewManifest(testName, ManifestOpts{Dir: tmpDir})
+	m2 := metadata.NewManifest(testName, metadata.ManifestOpts{Dir: tmpDir})
 	err = m2.Load()
 	assert.NoError(t, err)
-	assert.NotNil(t, m2.lsm0)
-	assert.Equal(t, m2.lsm0, lsmData)
+	assert.NotNil(t, m2.LSM0)
+	assert.Equal(t, m2.LSM0, lsmData)
 
 	time.Sleep(100 * time.Millisecond)
 }
@@ -113,7 +114,7 @@ func TestManifest_Sync(t *testing.T) {
 	const manifestFile = "manifest.json"
 	manifestPath := filepath.Join(tmpDir, "manifest", testName, manifestFile)
 
-	m := NewManifest(testName, ManifestOpts{Dir: tmpDir})
+	m := metadata.NewManifest(testName, metadata.ManifestOpts{Dir: tmpDir})
 	err := m.Load()
 	assert.NoError(t, err)
 
@@ -122,14 +123,14 @@ func TestManifest_Sync(t *testing.T) {
 	go m.Sync(ctx)
 
 	for range 10 {
-		level, _ := m.lsm0.GetLevel(0)
+		level, _ := m.LSM0.GetLevel(0)
 		nextId := level.GetNextId()
-		level.SetSSTable(nextId, NewSSTable("dummy", "dummy", 0))
+		level.SetSSTable(nextId, metadata.NewSSTable("dummy", "dummy", 0))
 	}
 
 	time.Sleep(4 * time.Second)
 
-	lsmDataView := NewLSMView(testName)
+	lsmDataView := metadata.NewLSMView(testName)
 	jsonData, err := json.Marshal(lsmDataView)
 	assert.NoError(t, err)
 	err = os.WriteFile(manifestPath, jsonData, 0644)

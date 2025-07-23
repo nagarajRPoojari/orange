@@ -28,23 +28,23 @@ type ManifestOpts struct {
 }
 
 type Manifest struct {
-	name string
-	lsm0 *LSM
+	Name string
+	LSM0 *LSM
 
 	opts ManifestOpts
 }
 
 func NewManifest(name string, opts ManifestOpts) *Manifest {
-	return &Manifest{name: name, lsm0: NewLSM(name), opts: opts}
+	return &Manifest{Name: name, LSM0: NewLSM(name), opts: opts}
 }
 
 func (t *Manifest) Load() error {
-	filePath := path.Join(t.opts.Dir, MANIFEST, t.name, fmt.Sprintf("%s.json", MANIFEST))
+	filePath := path.Join(t.opts.Dir, MANIFEST, t.Name, fmt.Sprintf("%s.json", MANIFEST))
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// create an empty LSM, take a snapshot & save
-			lsm := NewLSM(t.name)
+			lsm := NewLSM(t.Name)
 			lsmView := lsm.ToView()
 			emptyData, _ := json.Marshal(lsmView)
 
@@ -53,7 +53,7 @@ func (t *Manifest) Load() error {
 			fw.Write(emptyData)
 			fw.Close()
 
-			t.lsm0 = lsm
+			t.LSM0 = lsm
 			return nil
 		} else {
 			return err
@@ -61,9 +61,9 @@ func (t *Manifest) Load() error {
 	}
 
 	// load lsmview/snapshot to new LSM
-	lsmView := NewLSMView(t.name)
+	lsmView := NewLSMView(t.Name)
 	_ = json.Unmarshal(data, lsmView)
-	t.lsm0 = lsmView.ToLSM()
+	t.LSM0 = lsmView.ToLSM()
 	return nil
 }
 
@@ -76,13 +76,13 @@ func (t *Manifest) Sync(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			filePath := path.Join(t.opts.Dir, MANIFEST, t.name, fmt.Sprintf("%s.json", MANIFEST))
+			filePath := path.Join(t.opts.Dir, MANIFEST, t.Name, fmt.Sprintf("%s.json", MANIFEST))
 
 			// load consistent manifest snapshot
 			// reason: json needs struct to export fields with no locks
 			//		   lsm is rw protected through locks, using lsm directly might lead to data race
-			lsmView := t.lsm0.ToView()
-			log.Infof("Manifest LSM: %+v. %p\n", t.lsm0.levels, t.lsm0.levels)
+			lsmView := t.LSM0.ToView()
+			log.Infof("Manifest LSM: %+v. %p\n", t.LSM0.levels, t.LSM0.levels)
 
 			data, err := json.Marshal(lsmView)
 			if err != nil {
@@ -101,7 +101,7 @@ func (t *Manifest) FormatDBPath(l, i int) string {
 		return ""
 	}
 
-	return path.Join(t.opts.Dir, t.lsm0.GetName(), fmt.Sprintf("level-%d", l), fmt.Sprintf("sst-%d.db", i))
+	return path.Join(t.opts.Dir, t.LSM0.GetName(), fmt.Sprintf("level-%d", l), fmt.Sprintf("sst-%d.db", i))
 }
 
 func (t *Manifest) FormatIndexPath(l, i int) string {
@@ -109,7 +109,7 @@ func (t *Manifest) FormatIndexPath(l, i int) string {
 		return ""
 	}
 
-	return path.Join(t.opts.Dir, t.lsm0.GetName(), fmt.Sprintf("level-%d", l), fmt.Sprintf("sst-%d.index", i))
+	return path.Join(t.opts.Dir, t.LSM0.GetName(), fmt.Sprintf("level-%d", l), fmt.Sprintf("sst-%d.index", i))
 }
 
 func (t *Manifest) FormatLevelPath(l int) string {
@@ -117,10 +117,10 @@ func (t *Manifest) FormatLevelPath(l int) string {
 		return ""
 	}
 
-	return path.Join(t.opts.Dir, t.lsm0.GetName(), fmt.Sprintf("level-%d", l))
+	return path.Join(t.opts.Dir, t.LSM0.GetName(), fmt.Sprintf("level-%d", l))
 }
 
 func (t *Manifest) GetLSM() *LSM {
 	// it is safe to return lsm instance, lock management is done by LSM itself
-	return t.lsm0
+	return t.LSM0
 }

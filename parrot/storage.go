@@ -134,7 +134,7 @@ func (t *Reader[K, V]) Get(key K) ReadStatus[V] {
 }
 
 type WriteStatus struct {
-	err error
+	Err error
 }
 
 type WriterOpts struct {
@@ -158,5 +158,5 @@ func NewWriter[K types.Key, V types.Value](store *memtable.MemtableStore[K, V], 
 
 func (t *Writer[K, V]) Put(key K, value V) WriteStatus {
 	_ = t.store.Write(key, value)
-	return WriteStatus{err: nil}
+	return WriteStatus{Err: nil}
 }

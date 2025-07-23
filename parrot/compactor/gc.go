@@ -9,6 +9,7 @@ package compactor
 import (
 	"container/heap"
 	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -157,8 +158,10 @@ func (t *SizeTiredCompaction[K, V]) Run(mf *metadata.Manifest, cache *v2.CacheMa
 		keyCount := 0
 		index := 0
 
+		fmt.Println(levelL.GetTables())
 		// Load all sst from level=l
 		for id, table := range levelL.GetTables() {
+
 			sst, err := cache.GetFullPayload(table.DBPath, table.IndexPath)
 			if err != nil {
 				log.Panicf("failed to read sst while running gc %v", err)
