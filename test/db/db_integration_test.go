@@ -1,7 +1,6 @@
 package db_test
 
 import (
-	"fmt"
 	"path"
 	"testing"
 
@@ -21,42 +20,6 @@ func TestOragedb_Init(t *testing.T) {
 
 	assert.NotNil(t, db)
 
-	err := db.CreateCollection(
-		query.CreateOp{
-			Document: "test",
-			Schema: query.Schema(map[string]interface{}{
-				"_ID":  map[string]interface{}{"auto_increment": false},
-				"name": "STRING",
-				"age":  map[string]interface{}{"name": "INT8"},
-			}),
-		},
-	)
-
-	fmt.Println(err)
-
-	err = db.InsertDoc(
-		query.InsertOp{
-			Document: "test",
-			Value: map[string]interface{}{
-				"_ID":  90102,
-				"name": "hello",
-				"age": map[string]interface{}{
-					"name": 12,
-				},
-			},
-		},
-	)
-
-	fmt.Println(err)
-
-	doc, err := db.GetDoc(
-		query.SelectOp{
-			Document: "test",
-			ID:       90102,
-		},
-	)
-
-	fmt.Println(doc, err)
 }
 
 func TestOrangedb_SelectDoc(t *testing.T) {
