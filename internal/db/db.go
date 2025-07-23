@@ -11,7 +11,6 @@ import (
 	"github.com/nagarajRPoojari/orange/internal/schema"
 	"github.com/nagarajRPoojari/orange/internal/types"
 	storage "github.com/nagarajRPoojari/orange/parrot"
-	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 )
 
 type InternalValueType struct {
@@ -46,6 +45,25 @@ func NewOrangedb(opts DBopts) *Oragedb {
 		dbMap: &sync.Map{},
 		opts:  &opts,
 	}
+}
+
+func (t *Oragedb) ProcessQuery(q string) (any, error) {
+	parser := query.NewParser(q)
+	op, err := parser.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	switch v := op.(type) {
+	case query.CreateOp:
+		return nil, t.CreateCollection(v)
+	case query.InsertOp:
+		return nil, t.InsertDoc(v)
+	case query.SelectOp:
+		return t.GetDoc(v)
+	}
+
+	return nil, errors.SQLSyntaxError("invalid op")
 }
 
 func (t *Oragedb) CreateCollection(op query.CreateOp) error {
@@ -103,33 +121,41 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 			castedId = types.ID{K: v}
 		case int:
 			castedId = types.ID{K: int64(v)}
+		case float64:
+			castedId = types.ID{K: int64(v)}
 		default:
-			return fmt.Errorf("unexpected type for id: %T", id)
+			return fmt.Errorf("unexpected type for id: %T %v", id, id)
 		}
 
 		res := db.Put(castedId, InternalValueType{Payload: op.Value})
-		log.Infof("result: %#v", res)
+		return res.Err
 	}
 
 	return nil
 }
 
-func (t *Oragedb) GetDoc(op query.SelectOp) (InternalValueType, error) {
+func (t *Oragedb) GetDoc(op query.SelectOp) (map[string]interface{}, error) {
+	schema, err := t.schemaHandler.LoadFromCatalog(op.Document)
+	if err != nil {
+		return nil, err
+	}
+
 	val, ok := t.dbMap.Load(op.Document)
-	var null InternalValueType
 	if !ok {
-		return null, errors.InsertError("failed to find document " + op.Document)
+		return nil, errors.InsertError("failed to find document " + op.Document)
 	}
 
 	db, ok := val.(*storage.Storage[types.ID, InternalValueType])
 	if !ok {
-		return null, errors.InsertError("failed to get db for " + op.Document)
+		return nil, errors.InsertError("failed to get db for " + op.Document)
 	}
 
 	castedId := types.ID{K: op.ID}
 
 	res := db.Get(castedId)
 
-	return res.Value, nil
+	t.schemaHandler.VerifyAndCastData(schema, res.Value.Payload)
+
+	return res.Value.Payload, nil
 
 }

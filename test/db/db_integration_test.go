@@ -1,8 +1,11 @@
 package db_test
 
 import (
+	"fmt"
 	"path"
 	"testing"
+
+	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 
 	odb "github.com/nagarajRPoojari/orange/internal/db"
 	"github.com/nagarajRPoojari/orange/internal/query"
@@ -68,10 +71,11 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 		},
 	)
 
-	wanted := odb.InternalValueType(
-		odb.InternalValueType{
-			Payload: map[string]interface{}{"_ID": int64(90102), "age": map[string]interface{}{"name": types.INT8{V: 12}}, "name": types.STRING{V: "hello"}},
-		})
+	wanted := map[string]interface{}(
+		map[string]interface{}{
+			"_ID": int64(90102), "age": map[string]interface{}{"name": types.INT8{V: 12}}, "name": types.STRING{V: "hello"},
+		},
+	)
 
 	assert.Equal(t, wanted, got)
 }
@@ -171,4 +175,32 @@ func TestOragedb_CreateCollection(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOrangedb_ProcessQuery(t *testing.T) {
+	log.Disable()
+
+	db := odb.NewOrangedb(odb.DBopts{Dir: t.TempDir()})
+	_, err := db.ProcessQuery(`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`)
+
+	assert.NoError(t, err)
+
+	for i := 1; i <= 100; i++ {
+		name := fmt.Sprintf("User%d", i)
+		age := i
+		query := fmt.Sprintf(`INSERT VALUE INTO users {"_ID": %d, "name": "%s", "age": {"value": %d} }`, i, name, age)
+		_, err := db.ProcessQuery(query)
+		if err != nil {
+			log.Fatalf("Insert failed for ID %d: %v", i, err)
+		}
+	}
+
+	got, err := db.ProcessQuery(`SELECT name, age FROM users WHERE _ID = 89`)
+
+	wanted := map[string]interface{}(
+		map[string]interface{}{
+			"_ID": int64(89), "age": map[string]interface{}{"value": types.INT64{V: 89}}, "name": types.STRING{V: "User89"},
+		})
+	assert.NoError(t, err)
+	assert.Equal(t, wanted, got)
 }
