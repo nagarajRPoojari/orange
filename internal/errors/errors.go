@@ -27,3 +27,11 @@ func (t SchemaError) Error() string {
 func SchemaValidationError(msg string) error {
 	return SchemaError("validation error: " + msg)
 }
+
+func SchemaJSONMarshallError(msg string) error {
+	return SchemaError(msg)
+}
+
+func DuplicateSchemaError(msg string) error {
+	return SchemaError("duplicate schema found: " + msg)
+}

@@ -1,6 +1,10 @@
 package schema
 
 import (
+	"encoding/json"
+	"os"
+	"path"
+
 	"github.com/nagarajRPoojari/orange/internal/errors"
 	"github.com/nagarajRPoojari/orange/internal/query"
 	"github.com/nagarajRPoojari/orange/internal/types"
@@ -65,6 +69,27 @@ func recursiveVerifier(schema map[string]interface{}) error {
 			}
 			return recursiveVerifier(vMap)
 		}
+	}
+	return nil
+}
+
+func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error {
+	if err := t.VerifySchema(schema); err != nil {
+		return err
+	}
+
+	bytes, err := json.Marshal(schema)
+	if err != nil {
+		return errors.SchemaJSONMarshallError("failed to json marshall")
+	}
+
+	catalogPath := path.Join(t.opts.Dir, docName)
+	if _, err := os.Stat(catalogPath); err != nil {
+		if err := os.WriteFile(catalogPath, bytes, 0600); err != nil {
+			return errors.SchemaError("failed to save schema to catalog")
+		}
+	} else {
+		return errors.DuplicateSchemaError("for doc: " + docName)
 	}
 	return nil
 }

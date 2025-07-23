@@ -7,7 +7,7 @@ import (
 	"github.com/nagarajRPoojari/orange/internal/query"
 )
 
-func TestSchemaVerifier(t *testing.T) {
+func TestSchemaHandler_Verifier(t *testing.T) {
 	tests := []struct {
 		name    string
 		schema  query.Schema
@@ -64,6 +64,72 @@ func TestSchemaVerifier(t *testing.T) {
 			}
 			if tc.wantErr && tc.errSub != "" && !strings.Contains(err.Error(), tc.errSub) {
 				t.Errorf("expected error to contain '%s', got: %v", tc.errSub, err)
+			}
+		})
+	}
+}
+
+func TestSchemaHandler_SavetoCatalog(t *testing.T) {
+
+	type fields struct {
+		opts *SchemaHandlerOpts
+	}
+
+	field := fields{opts: &SchemaHandlerOpts{Dir: t.TempDir()}}
+	type args struct {
+		docName string
+		schema  query.Schema
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "valid schema and doc name",
+			fields: field,
+			args: args{docName: "test-0",
+				schema: query.Schema(map[string]interface{}{
+					"_ID":  map[string]interface{}{"auto_increment": false},
+					"name": "DATETIME",
+					"age":  map[string]interface{}{"name": "BLOB"},
+				}),
+			},
+			wantErr: false,
+		},
+		{
+			name:   "duplicate docName",
+			fields: field,
+			args: args{docName: "test-0",
+				schema: query.Schema(map[string]interface{}{
+					"_ID":  map[string]interface{}{"auto_increment": false},
+					"name": "INT",
+					"age":  map[string]interface{}{"name": "BLOB"},
+				}),
+			},
+			wantErr: true,
+		},
+		{
+			name:   "invalid schema",
+			fields: field,
+			args: args{docName: "test-1",
+				schema: query.Schema(map[string]interface{}{
+					"_ID":  map[string]interface{}{"auto_increment": "int"}, // auto_increment should be bool
+					"name": "FLOAT64",
+					"age":  map[string]interface{}{"name": "BLOB"},
+				}),
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &SchemaHandler{
+				opts: tt.fields.opts,
+			}
+			if err := tr.SavetoCatalog(tt.args.docName, tt.args.schema); (err != nil) != tt.wantErr {
+				t.Errorf("SchemaHandler.SavetoCatalog() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
