@@ -4,13 +4,14 @@
 // This file is part of: github.com/nagarajRPoojari/parrot
 // Licensed under the MIT License.
 
-package storage
+package storage_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	parrot "github.com/nagarajRPoojari/orange/parrot"
 	"github.com/nagarajRPoojari/orange/parrot/types"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 )
@@ -19,27 +20,28 @@ func TestStorage_Get_Put(t *testing.T) {
 	log.Disable()
 
 	dbName := "test"
-
+	dir := t.TempDir()
 	const MEMTABLE_THRESHOLD = 1024 * 2
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	db := NewStorage[types.IntKey, types.IntValue](
+	db := parrot.NewStorage[types.IntKey, types.IntValue](
 		dbName,
 		ctx,
-		StorageOpts{
-			Directory:         t.TempDir(),
+		parrot.StorageOpts{
+			Directory:         dir,
 			MemtableThreshold: MEMTABLE_THRESHOLD,
 			TurnOnCompaction:  true,
 			TurnOnWal:         true,
+			GCLogDir:          dir,
 		})
 
 	k, v := types.IntKey{K: 278}, types.IntValue{V: int32(278)}
 
 	writeRes := db.Put(k, v)
-	if writeRes.err != nil {
-		t.Errorf("Failed to put key, error=%v", writeRes.err)
+	if writeRes.Err != nil {
+		t.Errorf("Failed to put key, error=%v", writeRes.Err)
 	}
 
 	readRes := db.Get(k)
@@ -61,14 +63,15 @@ func TestStorage_Load_DB(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	db1 := NewStorage[types.IntKey, types.IntValue](
+	db1 := parrot.NewStorage[types.IntKey, types.IntValue](
 		dbName,
 		ctx,
-		StorageOpts{
+		parrot.StorageOpts{
 			Directory:         dir,
 			MemtableThreshold: MEMTABLE_THRESHOLD,
 			TurnOnCompaction:  true,
 			TurnOnWal:         true,
+			GCLogDir:          dir,
 		})
 
 	k, v := types.IntKey{K: 278}, types.IntValue{V: int32(278)}
@@ -82,14 +85,15 @@ func TestStorage_Load_DB(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	db2 := NewStorage[types.IntKey, types.IntValue](
+	db2 := parrot.NewStorage[types.IntKey, types.IntValue](
 		dbName,
 		ctx,
-		StorageOpts{
+		parrot.StorageOpts{
 			Directory:         dir,
 			MemtableThreshold: MEMTABLE_THRESHOLD,
 			TurnOnCompaction:  true,
 			TurnOnWal:         true,
+			GCLogDir:          dir,
 		})
 
 	readRes := db2.Get(k)

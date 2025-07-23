@@ -13,8 +13,6 @@ import (
 
 // basic types
 
-type ID intKey
-
 // int
 type INT int64Value
 type INT64 int64Value
@@ -51,12 +49,12 @@ type UUID uuidValue
 // blob
 type BLOB blobValue
 
-type intKey struct {
+type ID struct {
 	K int64
 }
 
-func (t intKey) Less(other any) bool {
-	otherInt, ok := other.(intKey)
+func (t ID) Less(other any) bool {
+	otherInt, ok := other.(ID)
 	if !ok {
 		return false
 	}
@@ -221,6 +219,19 @@ func (t blobValue) SizeOf() uintptr {
 	return uintptr(len(t.V))
 }
 
+func ToID(v interface{}) (int64, error) {
+	switch val := v.(type) {
+	case int64:
+		return val, nil
+	case int:
+		return int64(val), nil
+	case float64:
+		return int64(val), nil
+	default:
+		return 0, errors.TypeCastError(fmt.Sprintf("expected int64-compatible value, got %T", v))
+	}
+}
+
 func toInt64(v interface{}) (int64, error) {
 	switch val := v.(type) {
 	case int64:
@@ -358,16 +369,6 @@ func toTime(v interface{}) (time.Time, error) {
 	default:
 		return time.Time{}, errors.TypeCastError(fmt.Sprintf("expected time-compatible value, got %T", v))
 	}
-}
-
-// id
-
-func ToID(v interface{}) (ID, error) {
-	i, err := toInt64(v)
-	if err != nil {
-		return ID{}, err
-	}
-	return ID{K: i}, nil
 }
 
 // int types

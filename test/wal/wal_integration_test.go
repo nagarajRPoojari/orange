@@ -4,7 +4,7 @@
 // This file is part of: github.com/nagarajRPoojari/parrot
 // Licensed under the MIT License.
 
-package wal
+package wal_test
 
 import (
 	"bytes"
@@ -15,6 +15,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/nagarajRPoojari/orange/parrot/wal"
 )
 
 type event struct {
@@ -23,7 +25,7 @@ type event struct {
 
 func TestWAL_Write(t *testing.T) {
 	logFile := filepath.Join(t.TempDir(), "test.gob")
-	wal, err := NewWAL[event](logFile)
+	wal, err := wal.NewWAL[event](logFile)
 	if err != nil {
 		t.Error(err)
 	}
@@ -50,7 +52,7 @@ func TestWAL_Write(t *testing.T) {
 
 func TestWAL_Replay(t *testing.T) {
 	logFile := filepath.Join(t.TempDir(), "test.log")
-	wl, err := NewWAL[event](logFile)
+	wl, err := wal.NewWAL[event](logFile)
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,7 +66,7 @@ func TestWAL_Replay(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	events, err := Replay[event](logFile)
+	events, err := wal.Replay[event](logFile)
 	if err != nil {
 		t.Error(err)
 	}

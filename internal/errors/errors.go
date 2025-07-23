@@ -43,3 +43,13 @@ func DuplicateSchemaError(msg string) error {
 func TypeCastError(msg string) error {
 	return SchemaError("failed to typecast: " + msg)
 }
+
+type DBError string
+
+func (t DBError) Error() string {
+	return fmt.Sprintf("Schema error: %s", string(t))
+}
+
+func InsertError(msg string) error {
+	return DBError("insert error: " + msg)
+}

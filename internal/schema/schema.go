@@ -2,8 +2,10 @@ package schema
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/nagarajRPoojari/orange/internal/errors"
 	"github.com/nagarajRPoojari/orange/internal/query"
@@ -97,13 +99,20 @@ func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error
 	}
 
 	catalogPath := path.Join(t.opts.Dir, docName)
+	if err := os.MkdirAll(filepath.Dir(catalogPath), 0755); err != nil {
+		return errors.SchemaError("failed to create directories for catalog path")
+	}
+
 	if _, err := os.Stat(catalogPath); err != nil {
+
 		if err := os.WriteFile(catalogPath, bytes, 0600); err != nil {
 			return errors.SchemaError("failed to save schema to catalog")
 		}
 	} else {
 		return errors.DuplicateSchemaError("for doc: " + docName)
 	}
+
+	fmt.Println("successfull saved to catalog")
 	return nil
 }
 
@@ -137,7 +146,7 @@ func recursiveDataCaster(schema, data map[string]interface{}) error {
 			// ai, _ := idMap["auto_increment"].(bool)
 			// @todo: support auto increment id
 
-			casted, err := types.ToINT64(v)
+			casted, err := types.ToID(v)
 			if err != nil {
 				return err
 			}

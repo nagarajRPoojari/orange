@@ -161,7 +161,7 @@ func (t *Parser) ParseSelectQuery() (SelectOp, error) {
 	return SelectOp{
 		Document: name,
 		Columns:  cols,
-		_ID:      _id,
+		ID:       _id,
 	}, nil
 }
 

@@ -4,7 +4,7 @@
 // This file is part of: github.com/nagarajRPoojari/parrot
 // Licensed under the MIT License.
 
-package memtable
+package memtable_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nagarajRPoojari/orange/parrot/memtable"
 	"github.com/nagarajRPoojari/orange/parrot/metadata"
 	"github.com/nagarajRPoojari/orange/parrot/types"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
@@ -25,7 +26,7 @@ func TestMemtable_Write_And_Read_In_Mem(t *testing.T) {
 	log.Disable()
 
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: t.TempDir()})
-	mts := NewMemtableStore[types.StringKey, types.StringValue](mf, MemtableOpts{MemtableSoftLimit: 1024, QueueHardLimit: 10})
+	mts := memtable.NewMemtableStore[types.StringKey, types.StringValue](mf, memtable.MemtableOpts{MemtableSoftLimit: 1024, QueueHardLimit: 10})
 	k, v := types.StringKey{K: "key-0"}, types.StringValue{V: "val-0"}
 	mts.Write(k, v)
 
@@ -51,7 +52,7 @@ func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 	t.Cleanup(cancel)
 	go mf.Sync(ctx)
 
-	mts := NewMemtableStore[types.IntKey, types.IntValue](mf, MemtableOpts{MemtableSoftLimit: 1024})
+	mts := memtable.NewMemtableStore[types.IntKey, types.IntValue](mf, memtable.MemtableOpts{MemtableSoftLimit: 1024})
 	d := types.IntValue{V: 0}
 
 	// overflow memtable to trigger flush
@@ -99,7 +100,7 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 	go mf.Sync(ctx)
 
 	// overflow first memtable to trigger flush
-	mts := NewMemtableStore[types.IntKey, types.IntValue](mf, MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD})
+	mts := memtable.NewMemtableStore[types.IntKey, types.IntValue](mf, memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD})
 	d := types.IntValue{V: 0}
 	for i := range int(MEMTABLE_THRESHOLD / d.SizeOf()) {
 		mts.Write(types.IntKey{K: i}, types.IntValue{V: int32(i)})
@@ -160,7 +161,7 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	go mf.Sync(ctx)
 
 	// overflow first memtable to trigger flush
-	mts := NewMemtableStore[types.IntKey, types.IntValue](mf, MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD})
+	mts := memtable.NewMemtableStore[types.IntKey, types.IntValue](mf, memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD})
 	d := types.IntValue{V: 0}
 
 	multiples := 10
@@ -214,9 +215,9 @@ func TestMemtable_Rollback(t *testing.T) {
 
 	go mf.Sync(ctx)
 
-	mts := NewMemtableStore[types.IntKey, types.IntValue](
+	mts := memtable.NewMemtableStore[types.IntKey, types.IntValue](
 		mf,
-		MemtableOpts{
+		memtable.MemtableOpts{
 			MemtableSoftLimit: MEMTABLE_THRESHOLD,
 			LogDir:            temp,
 			TurnOnWal:         true,

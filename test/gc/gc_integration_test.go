@@ -4,7 +4,7 @@
 // This file is part of: github.com/nagarajRPoojari/parrot
 // Licensed under the MIT License.
 
-package compactor
+package compactor_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nagarajRPoojari/orange/parrot/compactor"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 
 	v2 "github.com/nagarajRPoojari/orange/parrot/cache/v2"
@@ -42,10 +43,10 @@ func TestGC(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, types.IntValue](mf, memtable.MemtableOpts{MemtableSoftLimit: 1024})
 	d := types.IntValue{V: 0}
 
-	gc := NewGC(
+	gc := compactor.NewGC(
 		mf,
 		(*v2.CacheManager[types.IntKey, types.IntValue])(mts.DecoderCache),
-		&SizeTiredCompaction[types.IntKey, types.IntValue]{Opts: SizeTiredCompactionOpts{Level0MaxSizeInBytes: 1000, MaxSizeInBytesGrowthFactor: 10}},
+		&compactor.SizeTiredCompaction[types.IntKey, types.IntValue]{Opts: compactor.SizeTiredCompactionOpts{Level0MaxSizeInBytes: 1000, MaxSizeInBytesGrowthFactor: 10}},
 		tempDir,
 	)
 	go gc.Run(ctx)
@@ -105,11 +106,11 @@ func TestGC_Intensive(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, types.IntValue](mf, memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD})
 	d := types.IntValue{V: 0}
 
-	gc := NewGC(
+	gc := compactor.NewGC(
 		mf,
 		(*v2.CacheManager[types.IntKey, types.IntValue])(mts.DecoderCache),
-		&SizeTiredCompaction[types.IntKey, types.IntValue]{
-			Opts: SizeTiredCompactionOpts{
+		&compactor.SizeTiredCompaction[types.IntKey, types.IntValue]{
+			Opts: compactor.SizeTiredCompactionOpts{
 				Level0MaxSizeInBytes:       2 * MEMTABLE_THRESHOLD, // softlimit = 2kb
 				MaxSizeInBytesGrowthFactor: 2,                      // growth_factor = 2
 			},

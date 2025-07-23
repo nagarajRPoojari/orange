@@ -4,19 +4,21 @@
 // This file is part of: github.com/nagarajRPoojari/parrot
 // Licensed under the MIT License.
 
-package io
+package io_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/nagarajRPoojari/orange/parrot/io"
 )
 
 func TestFileManager_WriteAndRead(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFilePath := filepath.Join(tmpDir, "test.txt")
 
-	manager := GetFileManager()
+	manager := io.GetFileManager()
 
 	writer := manager.OpenForWrite(testFilePath)
 	defer writer.Close()
@@ -30,7 +32,7 @@ func TestFileManager_WriteAndRead(t *testing.T) {
 	}
 	defer reader.Close()
 
-	got := reader.payload
+	got := reader.GetPayload()
 	if string(got) != string(expected) {
 		t.Errorf("Expected %q, got %q", expected, got)
 	}
@@ -42,7 +44,7 @@ func TestFileManager_MultipleReadsReturnSameInstance(t *testing.T) {
 
 	os.WriteFile(testFilePath, []byte("shared read mmap"), 0644)
 
-	manager := GetFileManager()
+	manager := io.GetFileManager()
 
 	r1, err := manager.OpenForRead(testFilePath)
 	if err != nil {
@@ -57,7 +59,7 @@ func TestFileManager_MultipleReadsReturnSameInstance(t *testing.T) {
 		t.Error("Expected same FileReader instance for shared read, got different instances")
 	}
 
-	if string(r1.payload) != string(r2.payload) {
+	if string(r1.GetPayload()) != string(r2.GetPayload()) {
 		t.Errorf("Expected both payloads to be equal, go different payload data")
 	}
 }
