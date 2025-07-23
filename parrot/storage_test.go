@@ -9,12 +9,13 @@ package storage
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/nagarajRPoojari/orange/parrot/types"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 )
 
-func TestStorage_Load(t *testing.T) {
+func TestStorage_Get_Put(t *testing.T) {
 	log.Disable()
 
 	dbName := "test"
@@ -30,13 +31,13 @@ func TestStorage_Load(t *testing.T) {
 		StorageOpts{
 			Directory:         t.TempDir(),
 			MemtableThreshold: MEMTABLE_THRESHOLD,
-			TurnOnCompaction:  false,
-			TurnOnWal:         false,
+			TurnOnCompaction:  true,
+			TurnOnWal:         true,
 		})
 
-	k, v := types.IntKey{K: 278}, types.IntValue{V: int32(267)}
-	writeRes := db.Put(k, v)
+	k, v := types.IntKey{K: 278}, types.IntValue{V: int32(278)}
 
+	writeRes := db.Put(k, v)
 	if writeRes.err != nil {
 		t.Errorf("Failed to put key, error=%v", writeRes.err)
 	}
@@ -44,7 +45,57 @@ func TestStorage_Load(t *testing.T) {
 	readRes := db.Get(k)
 
 	if readRes.Err != nil || readRes.Value != v {
-		t.Errorf("Failed to get key, error=%v", writeRes.err)
+		t.Errorf("Failed to get key, error=%v", readRes.Err)
+	}
+
+}
+
+func TestStorage_Load_DB(t *testing.T) {
+	log.Disable()
+
+	dbName := "test"
+	dir := t.TempDir()
+
+	const MEMTABLE_THRESHOLD = 1024 * 2
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	db1 := NewStorage[types.IntKey, types.IntValue](
+		dbName,
+		ctx,
+		StorageOpts{
+			Directory:         dir,
+			MemtableThreshold: MEMTABLE_THRESHOLD,
+			TurnOnCompaction:  true,
+			TurnOnWal:         true,
+		})
+
+	k, v := types.IntKey{K: 278}, types.IntValue{V: int32(278)}
+
+	multiples := 10
+	totalOps := int(MEMTABLE_THRESHOLD/v.SizeOf()) * multiples
+
+	for i := range totalOps {
+		db1.Put(types.IntKey{K: i}, types.IntValue{V: int32(i)})
+	}
+
+	time.Sleep(2 * time.Second)
+
+	db2 := NewStorage[types.IntKey, types.IntValue](
+		dbName,
+		ctx,
+		StorageOpts{
+			Directory:         dir,
+			MemtableThreshold: MEMTABLE_THRESHOLD,
+			TurnOnCompaction:  true,
+			TurnOnWal:         true,
+		})
+
+	readRes := db2.Get(k)
+
+	if readRes.Err != nil || readRes.Value != v {
+		t.Errorf("Failed to get key, error=%v", readRes.Err)
 	}
 
 }

@@ -1,8 +1,13 @@
 package query
 
 import (
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+
 	"github.com/nagarajRPoojari/orange/internal/errors"
-	"github.com/xwb1989/sqlparser"
 )
 
 type Parser struct {
@@ -14,129 +19,186 @@ func NewParser(input string) *Parser {
 }
 
 func (t *Parser) Build() (Query, error) {
-	stmt, err := sqlparser.Parse(t.input)
-	if err != nil {
-		panic(err)
-	}
-
-	return parse(stmt)
+	return t.parse()
 
 }
 
-func parse(stmt sqlparser.Statement) (Query, error) {
-	switch stmt := stmt.(type) {
-	case *sqlparser.Select:
-		columns := []string{}
+func (t Parser) parse() (Query, error) {
+	input := strings.TrimSpace(strings.ToUpper(t.input))
 
-		for _, expr := range stmt.SelectExprs {
-			switch expr := expr.(type) {
-			case *sqlparser.AliasedExpr:
-				switch col := expr.Expr.(type) {
-				case *sqlparser.ColName:
-					columns = append(columns, col.Name.String())
-				default:
-					columns = append(columns, sqlparser.String(expr.Expr))
-				}
-			}
-		}
-
-		tables := []string{}
-		for _, tblExpr := range stmt.From {
-			switch tbl := tblExpr.(type) {
-			case *sqlparser.AliasedTableExpr:
-				switch expr := tbl.Expr.(type) {
-				case sqlparser.TableName:
-					tables = append(tables, expr.Name.String())
-				}
-			}
-		}
-
-		whereClause := &WhereAST{ast: buildAST(stmt.Where.Expr)}
-		return SelectOp{
-			Table:   tables[0],
-			Columns: columns,
-			where:   whereClause,
-		}, nil
-
-	case *sqlparser.Insert:
-		values := make([]ColumnVal, len(stmt.Columns))
-		for i, col := range stmt.Columns {
-			values[i] = ColumnVal{Name: col.String()}
-		}
-		for _, row := range stmt.Rows.(sqlparser.Values) {
-			for i, val := range row {
-				values[i].Val = sqlparser.String(val)
-			}
-		}
-
-		op := InsertOp{
-			Table:  stmt.Table.Name.String(),
-			Values: values,
-		}
-
-		return op, nil
-
-	case *sqlparser.DDL:
-		schema := make([]ColumnSchema, 0)
-		if stmt.Action == sqlparser.CreateStr {
-			tableName := stmt.NewName.Name.String()
-			for _, col := range stmt.TableSpec.Columns {
-				schema = append(schema, ColumnSchema{
-					Name: col.Name.String(),
-					Type: col.Type.Type,
-				})
-			}
-
-			return CreateOp{
-				Table:  tableName,
-				Schema: schema,
-			}, nil
-		}
-
-		return nil, errors.SQLParseError
-
+	switch {
+	case strings.HasPrefix(input, string(T_SELECT)):
+		return t.ParseSelectQuery()
+	case strings.HasPrefix(input, string(T_INSERT)):
+		return t.ParseInsertQuery()
+	case strings.HasPrefix(input, string(T_CREATE)):
+		return t.ParseCreateQuery()
 	default:
-		return nil, errors.SQLParseError
+		return nil, errors.SQLSyntaxError("unsupported statement")
 	}
 }
 
-func buildAST(expr sqlparser.Expr) *AstNode {
-	switch node := expr.(type) {
-	case *sqlparser.AndExpr:
-		return &AstNode{Op: string(T_AND), SubOp1: buildAST(node.Left), SubOp2: buildAST(node.Right)}
+func extractOutermost(input string, startChar, endChar rune) (string, error) {
+	start := regexp.QuoteMeta(string(startChar))
+	end := regexp.QuoteMeta(string(endChar))
 
-	case *sqlparser.OrExpr:
+	pattern := fmt.Sprintf("%s(.*)%s", start, end)
+	re := regexp.MustCompile(pattern)
 
-		return &AstNode{Op: string(T_OR), SubOp1: buildAST(node.Left), SubOp2: buildAST(node.Right)}
+	match := re.FindStringSubmatch(input)
+	if len(match) > 1 {
+		return match[1], nil
+	}
+	return "", errors.SQLSyntaxError("failed to extract fields")
+}
 
-	case *sqlparser.ComparisonExpr:
-		var op string
-		switch node.Operator {
-		case sqlparser.EqualStr:
-			op = string(T_EQUALS)
-		case sqlparser.NotEqualStr:
-			op = string(T_NOTEQUALS)
-		case sqlparser.LessThanStr:
-			op = string(T_LESSTHAN)
-		case sqlparser.GreaterThanStr:
-			op = string(T_GREATERTHAN)
-		case sqlparser.LessEqualStr:
-			op = string(T_LESSTHANOREQALS)
-		case sqlparser.GreaterEqualStr:
-			op = string(T_GREATERTHANOREQUALS)
-		}
-
-		return &AstNode{Op: op, SubOp1: buildAST(node.Left), SubOp2: buildAST(node.Right)}
-
-	case *sqlparser.ParenExpr:
-		return buildAST(node.Expr)
-
-	case *sqlparser.ColName:
-		return &AstNode{ColumnName: node.Name.String()}
-
-	case *sqlparser.SQLVal:
-		return &AstNode{Value: string(node.Val)}
+//	CREATE DOCUMENT user {
+//	 name: "hello",
+//		game: "hello"
+//	}
+func (t *Parser) ParseCreateQuery() (CreateOp, error) {
+	doc, err := extractOutermost(t.input, '{', '}')
+	if err != nil {
+		var null CreateOp
+		return null, err
+	}
+	name, err := extractDocumentNameFromCreateQuery(t.input)
+	if err != nil {
+		var null CreateOp
+		return null, err
 	}
 
+	schema, err := unmarshallSchema(JSONString(doc))
+	if err != nil {
+		var null CreateOp
+		return null, err
+	}
+
+	return CreateOp{
+		Document: name,
+		Schema:   schema,
+	}, nil
+}
+
+func extractDocumentNameFromCreateQuery(input string) (string, error) {
+	re := regexp.MustCompile(fmt.Sprintf(`(?i)%s\s+%s\s+(\w+)`, T_CREATE, T_DOCUMENT))
+	match := re.FindStringSubmatch(input)
+	if len(match) > 1 {
+		return match[1], nil
+	}
+	return "", errors.SQLSyntaxError("failed to extract document name")
+}
+
+func unmarshallSchema(input JSONString) (Schema, error) {
+	var schema Schema
+	err := json.Unmarshal([]byte("{"+input+"}"), &schema)
+	if err != nil {
+		return nil, errors.SQLSyntaxError("invalid JSON schema: " + err.Error())
+	}
+	return schema, nil
+}
+
+// INSERT VALUE INTO user {
+//
+// }
+func (t *Parser) ParseInsertQuery() (InsertOp, error) {
+	doc, err := extractOutermost(t.input, '{', '}')
+	if err != nil {
+		var null InsertOp
+		return null, err
+	}
+	name, err := extractDocumentNameFromInsertQuery(t.input)
+	if err != nil {
+		var null InsertOp
+		return null, err
+	}
+
+	value, err := unmarshallValue(JSONString(doc))
+	if err != nil {
+		var null InsertOp
+		return null, err
+	}
+
+	return InsertOp{
+		Document: name,
+		Value:    value,
+	}, nil
+}
+
+func extractDocumentNameFromInsertQuery(input string) (string, error) {
+	re := regexp.MustCompile(fmt.Sprintf(`(?i)%s\s+%s\s+%s\s+(\w+)`, T_INSERT, T_VALUE, T_INTO))
+	match := re.FindStringSubmatch(input)
+	if len(match) > 1 {
+		return match[1], nil
+	}
+	return "", errors.SQLSyntaxError("failed to extract document name")
+}
+
+func unmarshallValue(input JSONString) (Value, error) {
+	var schema Value
+	err := json.Unmarshal([]byte("{"+input+"}"), &schema)
+	if err != nil {
+		return nil, errors.SQLSyntaxError("invalid JSON schema: " + err.Error())
+	}
+	return schema, nil
+}
+
+// SELECT name, age FROM user WITH _ID="some_key"
+func (t *Parser) ParseSelectQuery() (SelectOp, error) {
+	name, err := extractDocumentNameFromSelectQuery(t.input)
+	if err != nil {
+		var null SelectOp
+		return null, err
+	}
+
+	_id, err := extractID(t.input)
+	if err != nil {
+		var null SelectOp
+		return null, err
+	}
+
+	cols := extractColumnNames(t.input)
+	return SelectOp{
+		Document: name,
+		Columns:  cols,
+		_ID:      _id,
+	}, nil
+}
+
+func extractID(input string) (int64, error) {
+	re := regexp.MustCompile(`_ID\s*=\s*(\d+)`)
+	match := re.FindStringSubmatch(input)
+	if len(match) > 1 {
+		numStr := strings.TrimSpace(match[1])
+		num, err := strconv.ParseInt(numStr, 10, 64)
+		if err != nil {
+			return 0, errors.SQLSyntaxError("failed to parse _ID to int64")
+		}
+		return num, nil
+	}
+	return 0, errors.SQLSyntaxError("failed to extract _ID")
+}
+
+func extractColumnNames(input string) []string {
+	re := regexp.MustCompile(fmt.Sprintf(`(?i)%s\s+(.+?)\s+%s`, T_SELECT, T_FROM))
+	match := re.FindStringSubmatch(input)
+	if len(match) > 1 {
+		rawFields := match[1]
+		parts := strings.Split(rawFields, ",")
+		var fields []string
+		for _, field := range parts {
+			fields = append(fields, strings.TrimSpace(field))
+		}
+		return fields
+	}
 	return nil
+}
+
+func extractDocumentNameFromSelectQuery(input string) (string, error) {
+	re := regexp.MustCompile(`(?i)FROM\s+(\w+)`)
+	match := re.FindStringSubmatch(input)
+	if len(match) > 1 {
+		return match[1], nil
+	}
+	return "", errors.SQLSyntaxError("failed to extract document name")
 }

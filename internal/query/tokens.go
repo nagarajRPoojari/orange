@@ -4,21 +4,22 @@ type TokenType string
 
 const (
 	// Keywords
-	T_CREATE TokenType = "CREATE"
-	T_TABLE  TokenType = "TABLE"
-	T_INSERT TokenType = "INSERT"
-	T_INTO   TokenType = "INTO"
-	T_VALUES TokenType = "VALUES"
-	T_SELECT TokenType = "SELECT"
-	T_FROM   TokenType = "FROM"
-	T_WHERE  TokenType = "WHERE"
+	T_CREATE   TokenType = "CREATE"
+	T_DOCUMENT TokenType = "DOCUMENT"
+	T_INSERT   TokenType = "INSERT"
+	T_INTO     TokenType = "INTO"
+	T_VALUE    TokenType = "VALUE"
+	T_SELECT   TokenType = "SELECT"
+	T_FROM     TokenType = "FROM"
 
 	// Symbols
-	T_LPAREN    TokenType = "("
-	T_RPAREN    TokenType = ")"
-	T_COMMA     TokenType = ","
-	T_SEMICOLON TokenType = ";"
-	T_ASTERISK  TokenType = "*"
+	T_LPAREN         TokenType = "("
+	T_RPAREN         TokenType = ")"
+	T_COMMA          TokenType = ","
+	T_SEMICOLON      TokenType = ";"
+	T_ASTERISK       TokenType = "*"
+	T_LFLOWERBRACKET TokenType = "{"
+	T_RFLOWERBRACKET TokenType = "}"
 
 	// OPS
 	T_LESSTHAN            TokenType = "<"
@@ -29,11 +30,6 @@ const (
 	T_NOTEQUALS           TokenType = "!="
 	T_AND                 TokenType = "AND"
 	T_OR                  TokenType = "OR"
-
-	// Literals
-	T_IDENTIFIER TokenType = "IDENTIFIER"
-	T_INT        TokenType = "INT"
-	T_STRING     TokenType = "STRING"
 
 	// Special
 	T_EOF TokenType = "EOF"

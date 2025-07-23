@@ -1,9 +1,9 @@
 package query
 
-type ColumnSchema struct {
-	Name string
-	Type string
-}
+type JSONString string
+
+type Schema map[string]interface{}
+type Value map[string]interface{}
 
 type ColumnVal struct {
 	Name string
@@ -11,33 +11,19 @@ type ColumnVal struct {
 }
 
 type CreateOp struct {
-	Table  string
-	Schema []ColumnSchema
+	Document string
+	Schema   Schema
 }
 
 type InsertOp struct {
-	Table  string
-	Values []ColumnVal
-}
-
-type AstNode struct {
-	Op string
-
-	ColumnName string
-	Value      string
-
-	SubOp1 *AstNode
-	SubOp2 *AstNode
-}
-
-type WhereAST struct {
-	ast *AstNode
+	Document string
+	Value    Value
 }
 
 type SelectOp struct {
-	Table   string
-	Columns []string
-	where   *WhereAST
+	Document string
+	Columns  []string
+	_ID      int64
 }
 
 type Query interface{}
