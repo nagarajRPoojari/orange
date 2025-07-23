@@ -133,7 +133,7 @@ func TestParser_ParseSelectQuery(t *testing.T) {
 			want: SelectOp{
 				Document: "users",
 				Columns:  []string{"name.game", "abc"},
-				_ID:      263920338392,
+				ID:       263920338392,
 			},
 			wantErr: false,
 		},

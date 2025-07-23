@@ -23,7 +23,7 @@ type InsertOp struct {
 type SelectOp struct {
 	Document string
 	Columns  []string
-	_ID      int64
+	ID       int64
 }
 
 type Query interface{}
