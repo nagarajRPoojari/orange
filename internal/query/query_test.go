@@ -8,81 +8,55 @@ import (
 )
 
 func TestCreateParser(t *testing.T) {
-	createQ := "CREATE TABLE users (id INT, name TEXT, age INT, card INT, sr VARCHAR)"
-	expected := CreateOp{
-		Table:  "users",
-		Schema: []ColumnSchema{{Name: "id", Type: "int"}, {Name: "name", Type: "text"}, {Name: "age", Type: "int"}, {Name: "card", Type: "int"}, {Name: "sr", Type: "varchar"}},
+	createQ := `CREATE DOCUMENT users { "name": "string", "age": "int" }`
+	expectedCreate := CreateOp{
+		Document: "users",
+		Schema: map[string]string{
+			"name": "string",
+			"age":  "int",
+		},
 	}
-
 	got, err := NewParser(createQ).Build()
-	assert.NotErrorIs(t, err, assert.AnError)
-	assert.Equal(t, expected, got)
+	assert.NoError(t, err, assert.AnError)
+	assert.Equal(t, expectedCreate, got)
 }
 
 func TestInsertParser(t *testing.T) {
-	insertQ := "INSERT INTO users (id, name, age, team) VALUES (1, 'Alice', 30, 90)"
-	expected := InsertOp{
-		Table: "users",
-		Values: []ColumnVal{
-			{Name: "id", Val: "1"},
-			{Name: "name", Val: "'Alice'"},
-			{Name: "age", Val: "30"},
-			{Name: "team", Val: "90"},
+	insertQ := `INSERT VALUE INTO users {"age": 1, "name": "Alice", "score": 30, "interest": { "food": "cake", "name":89000}}`
+	expectedInsert := InsertOp{
+		Document: "users",
+		Value: map[string]interface{}{
+			"age":   float64(1), // JSON numbers decode as float64 by default
+			"name":  "Alice",
+			"score": float64(30),
+			"interest": map[string]interface{}{
+				"food": "cake",
+				"name": float64(89000),
+			},
 		},
 	}
 
 	got, err := NewParser(insertQ).Build()
-	assert.NotErrorIs(t, err, assert.AnError)
-	assert.Equal(t, expected, got)
+	assert.NoError(t, err, assert.AnError)
+	assert.Equal(t, expectedInsert, got)
 }
 
 func TestInvalidQuery(t *testing.T) {
 	insertQ := "INSERT INO users (id, name, age, team) VALUES (1, 'Alice', 30, 90)"
 
 	_, err := NewParser(insertQ).Build()
-	assert.ErrorIs(t, err, errors.SQLSyntaxError)
+	assert.ErrorIs(t, err, errors.SQLSyntaxError("failed to extract fields"))
 }
 
 func TestSelectParser(t *testing.T) {
-	query := "SELECT name, abc FROM users WHERE (name = 'abc' OR b = 91 OR (age = 90 AND x >= 90))"
-
-	expected := SelectOp{
-		Table:   "users",
-		Columns: []string{"name", "abc"},
-		where: &WhereAST{
-			ast: &AstNode{
-				Op: string(T_OR),
-				SubOp1: &AstNode{
-					Op: string(T_OR),
-					SubOp1: &AstNode{
-						Op:     string(T_EQUALS),
-						SubOp1: &AstNode{ColumnName: "name"},
-						SubOp2: &AstNode{Value: "abc"},
-					},
-					SubOp2: &AstNode{
-						Op:     string(T_EQUALS),
-						SubOp1: &AstNode{ColumnName: "b"},
-						SubOp2: &AstNode{Value: "91"},
-					},
-				},
-				SubOp2: &AstNode{
-					Op: string(T_AND),
-					SubOp1: &AstNode{
-						Op:     string(T_EQUALS),
-						SubOp1: &AstNode{ColumnName: "age"},
-						SubOp2: &AstNode{Value: "90"},
-					},
-					SubOp2: &AstNode{
-						Op:     string(T_GREATERTHANOREQUALS),
-						SubOp1: &AstNode{ColumnName: "x"},
-						SubOp2: &AstNode{Value: "90"},
-					},
-				},
-			},
-		},
+	selectQ := `SELECT name.game, abc FROM users WHERE _ID="abcd"`
+	expectedInsert := SelectOp{
+		Document: "users",
+		Columns:  []string{"name.game", "abc"},
+		_ID:      "abcd",
 	}
 
-	got, err := NewParser(query).Build()
-	assert.NotErrorIs(t, err, assert.AnError)
-	assert.Equal(t, expected, got)
+	got, err := NewParser(selectQ).Build()
+	assert.NoError(t, err, assert.AnError)
+	assert.Equal(t, expectedInsert, got)
 }
