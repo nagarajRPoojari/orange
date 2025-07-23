@@ -169,16 +169,33 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:   "invalid decimal format",
+			fields: fields{},
+			args: args{
+				schema: query.Schema(map[string]interface{}{
+					"young": "DECIMAL",
+					"old":   "BOOL",
+					"name":  "INT",
+				}),
+				data: map[string]interface{}{
+					"young": "16282929292.19191.1092",
+					"old":   "false",
+					"name":  819282,
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name:   "valid with explicit type casting",
 			fields: fields{},
 			args: args{
 				schema: query.Schema(map[string]interface{}{
-					"young": "BOOL",
+					"young": "DECIMAL",
 					"old":   "BOOL",
-					"name":  "STRING",
+					"name":  "INT",
 				}),
 				data: map[string]interface{}{
-					"young": true,
+					"young": "16282929292.192",
 					"old":   "false",
 					"name":  819282,
 				},

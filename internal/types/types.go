@@ -4,6 +4,7 @@ package types
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -488,10 +489,16 @@ func ToTIMESTAMP(v interface{}) (TIMESTAMP, error) {
 
 // decimal/numeric
 func ToDECIMAL(v interface{}) (DECIMAL, error) {
+	var validDecimal = regexp.MustCompile(`^-?\d+(\.\d+)?$`)
 	s, err := toString(v)
 	if err != nil {
 		return DECIMAL{}, err
 	}
+
+	if !validDecimal.MatchString(s) {
+		return DECIMAL{}, fmt.Errorf("invalid decimal format: %q", s)
+	}
+
 	return DECIMAL(decimalValue{V: s}), nil
 }
 
