@@ -4,7 +4,7 @@
 // This file is part of: github.com/nagarajRPoojari/parrot
 // Licensed under the MIT License.
 
-package memtable
+package memtable_test
 
 import (
 	"context"

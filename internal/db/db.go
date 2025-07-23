@@ -11,14 +11,15 @@ import (
 	"github.com/nagarajRPoojari/orange/internal/schema"
 	"github.com/nagarajRPoojari/orange/internal/types"
 	storage "github.com/nagarajRPoojari/orange/parrot"
+	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 )
 
-type _value struct {
-	payload map[string]interface{}
+type InternalValueType struct {
+	Payload map[string]interface{}
 }
 
 // @todo: fix
-func (t _value) SizeOf() uintptr {
+func (t InternalValueType) SizeOf() uintptr {
 	return 8
 }
 
@@ -54,7 +55,7 @@ func (t *Oragedb) CreateCollection(op query.CreateOp) error {
 	const MEMTABLE_THRESHOLD = 1024 * 2
 	ctx, _ := context.WithCancel(context.Background())
 
-	db := storage.NewStorage[types.ID, _value](
+	db := storage.NewStorage[types.ID, InternalValueType](
 		dbName,
 		ctx,
 		storage.StorageOpts{
@@ -84,29 +85,43 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 		return errors.InsertError("failed to find document " + op.Document)
 	}
 
-	db, ok := val.(*storage.Storage[types.ID, _value])
+	db, ok := val.(*storage.Storage[types.ID, InternalValueType])
 	if !ok {
 		return errors.InsertError("failed to get db for " + op.Document)
 	}
 
 	if id, ok := op.Value["_ID"]; ok {
-		castedId := types.ID{K: id.(int64)}
 
-		res := db.Put(castedId, _value{payload: op.Value})
-		fmt.Println(res)
+		// @todo: need to verify this block
+		// id is assumed to be casted to int64 by schemaHandler
+		// still id.(int64) fails sometimes
+
+		var castedId types.ID
+
+		switch v := id.(type) {
+		case int64:
+			castedId = types.ID{K: v}
+		case int:
+			castedId = types.ID{K: int64(v)}
+		default:
+			return fmt.Errorf("unexpected type for id: %T", id)
+		}
+
+		res := db.Put(castedId, InternalValueType{Payload: op.Value})
+		log.Infof("result: %#v", res)
 	}
 
 	return nil
 }
 
-func (t *Oragedb) GetDoc(op query.SelectOp) (_value, error) {
+func (t *Oragedb) GetDoc(op query.SelectOp) (InternalValueType, error) {
 	val, ok := t.dbMap.Load(op.Document)
-	var null _value
+	var null InternalValueType
 	if !ok {
 		return null, errors.InsertError("failed to find document " + op.Document)
 	}
 
-	db, ok := val.(*storage.Storage[types.ID, _value])
+	db, ok := val.(*storage.Storage[types.ID, InternalValueType])
 	if !ok {
 		return null, errors.InsertError("failed to get db for " + op.Document)
 	}
