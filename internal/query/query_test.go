@@ -8,12 +8,17 @@ import (
 )
 
 func TestCreateParser(t *testing.T) {
-	createQ := `CREATE DOCUMENT users { "name": "string", "age": "int" }`
+	createQ := `CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "string", "age": {"name": "string"} }`
 	expectedCreate := CreateOp{
 		Document: "users",
-		Schema: map[string]string{
+		Schema: map[string]interface{}{
+			"_ID": map[string]interface{}{
+				"auto_increment": false,
+			},
 			"name": "string",
-			"age":  "int",
+			"age": map[string]interface{}{
+				"name": "string",
+			},
 		},
 	}
 	got, err := NewParser(createQ).Build()
@@ -49,11 +54,11 @@ func TestInvalidQuery(t *testing.T) {
 }
 
 func TestSelectParser(t *testing.T) {
-	selectQ := `SELECT name.game, abc FROM users WHERE _ID="abcd"`
+	selectQ := `SELECT name.game, abc FROM users WHERE _ID=263920338392`
 	expectedInsert := SelectOp{
 		Document: "users",
 		Columns:  []string{"name.game", "abc"},
-		_ID:      "abcd",
+		_ID:      263920338392,
 	}
 
 	got, err := NewParser(selectQ).Build()

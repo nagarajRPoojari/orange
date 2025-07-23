@@ -1,6 +1,8 @@
 package errors
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type SQLError string
 
@@ -14,4 +16,14 @@ func SQLParseError(msg string) error {
 
 func SQLSyntaxError(msg string) error {
 	return SQLError("SQL syntax error: " + msg)
+}
+
+type SchemaError string
+
+func (t SchemaError) Error() string {
+	return fmt.Sprintf("Schema error: %s", string(t))
+}
+
+func SchemaValidationError(msg string) error {
+	return SchemaError("validation error: " + msg)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/nagarajRPoojari/orange/internal/errors"
@@ -164,13 +165,18 @@ func (t *Parser) ParseSelectQuery() (SelectOp, error) {
 	}, nil
 }
 
-func extractID(input string) (string, error) {
-	re := regexp.MustCompile(`_ID\s*=\s*"(.*?)"`)
+func extractID(input string) (int64, error) {
+	re := regexp.MustCompile(`_ID\s*=\s*(\d+)`)
 	match := re.FindStringSubmatch(input)
 	if len(match) > 1 {
-		return match[1], nil
+		numStr := strings.TrimSpace(match[1])
+		num, err := strconv.ParseInt(numStr, 10, 64)
+		if err != nil {
+			return 0, errors.SQLSyntaxError("failed to parse _ID to int64")
+		}
+		return num, nil
 	}
-	return "", errors.SQLSyntaxError("failed to extract _ID")
+	return 0, errors.SQLSyntaxError("failed to extract _ID")
 }
 
 func extractColumnNames(input string) []string {

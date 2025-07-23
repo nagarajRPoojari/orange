@@ -1,10 +1,12 @@
+//go:generate go run gen_types.go
+
 package types
 
 import "time"
 
 // basic types
 
-type _ID intKey
+type ID intKey
 
 // int
 type INT int64Value
@@ -25,7 +27,6 @@ type BOOL boolValue
 type STRING stringValue
 
 // byte
-type BYTE byteValue
 
 // date & time
 type DATE dateValue
@@ -44,7 +45,7 @@ type UUID uuidValue
 type BLOB blobValue
 
 type intKey struct {
-	K int
+	K int64
 }
 
 func (t intKey) Less(other any) bool {

@@ -2,7 +2,7 @@ package query
 
 type JSONString string
 
-type Schema map[string]string
+type Schema map[string]interface{}
 type Value map[string]interface{}
 
 type ColumnVal struct {
@@ -23,7 +23,7 @@ type InsertOp struct {
 type SelectOp struct {
 	Document string
 	Columns  []string
-	_ID      string
+	_ID      int64
 }
 
 type Query interface{}
