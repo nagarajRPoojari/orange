@@ -35,3 +35,7 @@ func SchemaJSONMarshallError(msg string) error {
 func DuplicateSchemaError(msg string) error {
 	return SchemaError("duplicate schema found: " + msg)
 }
+
+func TypeCastError(msg string) error {
+	return SchemaError("failed to typecast: " + msg)
+}

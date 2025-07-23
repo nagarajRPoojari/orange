@@ -31,23 +31,32 @@ func NewSchemaHandler(opts *SchemaHandlerOpts) *SchemaHandler {
 
 func (t *SchemaHandler) VerifySchema(schema query.Schema) error {
 	// validating _ID if provided
+	_, err := loadSchemaId(schema)
+	if err != nil {
+		return err
+	}
+
+	return recursiveSchemaVerifier(schema)
+}
+
+func loadSchemaId(schema query.Schema) (map[string]interface{}, error) {
+	var id_map map[string]interface{}
 	if _id := schema["_ID"]; _id != nil {
 		id_map, ok := _id.(map[string]interface{})
 		if !ok {
-			return errors.SchemaValidationError("_ID properties missing")
+			return nil, errors.SchemaValidationError("_ID properties missing")
 		}
 		if ai, ok := id_map["auto_increment"]; ok {
 			_, ok := ai.(bool)
 			if !ok {
-				return errors.SchemaValidationError("auto_increment field should be bool")
+				return nil, errors.SchemaValidationError("auto_increment field should be bool")
 			}
 		}
 	}
-
-	return recursiveVerifier(schema)
+	return id_map, nil
 }
 
-func recursiveVerifier(schema map[string]interface{}) error {
+func recursiveSchemaVerifier(schema map[string]interface{}) error {
 	if schema == nil || len(schema) == 0 {
 		return errors.SchemaValidationError("missing data type")
 	}
@@ -67,7 +76,7 @@ func recursiveVerifier(schema map[string]interface{}) error {
 			if !ok {
 				return errors.SchemaValidationError("invalid data type")
 			}
-			return recursiveVerifier(vMap)
+			return recursiveSchemaVerifier(vMap)
 		}
 	}
 	return nil
@@ -90,6 +99,48 @@ func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error
 		}
 	} else {
 		return errors.DuplicateSchemaError("for doc: " + docName)
+	}
+	return nil
+}
+
+func (t *SchemaHandler) VerifyAndCastData(schema, data map[string]interface{}) error {
+	return recursiveDataCaster(schema, data)
+}
+
+func recursiveDataCaster(schema, data map[string]interface{}) error {
+	for key, v := range data {
+		if key == "_ID" {
+			// idMap, err := loadSchemaId(schema)
+			// ai, _ := idMap["auto_increment"].(bool)
+			// @todo: support auto increment id
+
+			casted, err := types.ToINT64(v)
+			if err != nil {
+				return err
+			}
+
+			data[key] = casted
+
+			continue
+		}
+
+		// try to cast to string
+		schemaField := schema[key]
+		schemaStringField, ok := schemaField.(string)
+		if ok {
+			casted, err := types.TypeCast(schemaStringField, v)
+			if err != nil {
+				return err
+			}
+			data[key] = casted
+		} else {
+			vMap, ok := v.(map[string]interface{})
+			if !ok {
+				return errors.TypeCastError("invalid data type of " + key)
+			}
+			sMap, _ := schemaField.(map[string]interface{})
+			return recursiveDataCaster(sMap, vMap)
+		}
 	}
 	return nil
 }

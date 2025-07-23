@@ -134,3 +134,81 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 		})
 	}
 }
+
+func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
+	type fields struct {
+		opts *SchemaHandlerOpts
+	}
+	type args struct {
+		schema map[string]interface{}
+		data   map[string]interface{}
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "valid data",
+			fields: fields{},
+			args: args{
+				schema: query.Schema(map[string]interface{}{
+					"_ID":  map[string]interface{}{"auto_increment": false},
+					"name": "STRING",
+					"age":  map[string]interface{}{"name": "INT8"},
+				}),
+				data: map[string]interface{}{
+					"_ID":  90102,
+					"name": "hello",
+					"age": map[string]interface{}{
+						"name": 12,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "valid with explicit type casting",
+			fields: fields{},
+			args: args{
+				schema: query.Schema(map[string]interface{}{
+					"young": "BOOL",
+					"old":   "BOOL",
+					"name":  "STRING",
+				}),
+				data: map[string]interface{}{
+					"young": true,
+					"old":   "false",
+					"name":  819282,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "invalid to typecast",
+			fields: fields{},
+			args: args{
+				schema: query.Schema(map[string]interface{}{
+					"young": "INT",
+					"old":   "BOOL",
+				}),
+				data: map[string]interface{}{
+					"young": "false",
+					"old":   "false",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &SchemaHandler{
+				opts: tt.fields.opts,
+			}
+			if err := tr.VerifyAndCastData(tt.args.schema, tt.args.data); (err != nil) != tt.wantErr {
+				t.Errorf("SchemaHandler.VerifyAndCastData() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
