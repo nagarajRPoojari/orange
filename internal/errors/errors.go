@@ -32,6 +32,10 @@ func SchemaJSONMarshallError(msg string) error {
 	return SchemaError(msg)
 }
 
+func SchemaJSONUnMarshallError(msg string) error {
+	return SchemaError(msg)
+}
+
 func DuplicateSchemaError(msg string) error {
 	return SchemaError("duplicate schema found: " + msg)
 }

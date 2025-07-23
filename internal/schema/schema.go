@@ -20,12 +20,16 @@ type SchemaHandlerOpts struct {
 }
 
 type SchemaHandler struct {
+	// cache of loaded schema
+	cache map[string]query.Schema
+
 	opts *SchemaHandlerOpts
 }
 
 func NewSchemaHandler(opts *SchemaHandlerOpts) *SchemaHandler {
 	return &SchemaHandler{
-		opts: opts,
+		cache: map[string]query.Schema{},
+		opts:  opts,
 	}
 }
 
@@ -101,6 +105,25 @@ func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error
 		return errors.DuplicateSchemaError("for doc: " + docName)
 	}
 	return nil
+}
+
+func (t *SchemaHandler) LoadFromCatalog(docName string) (query.Schema, error) {
+	if schema, ok := t.cache[docName]; ok {
+		return schema, nil
+	}
+
+	catalogPath := path.Join(t.opts.Dir, docName)
+	data, err := os.ReadFile(catalogPath)
+	if err != nil {
+		return nil, errors.SchemaError("failed to load schema")
+	}
+
+	var schema query.Schema
+	if err := json.Unmarshal(data, &schema); err != nil {
+		return nil, errors.SchemaJSONUnMarshallError("failed to unmarshal schema")
+	}
+
+	return schema, nil
 }
 
 func (t *SchemaHandler) VerifyAndCastData(schema, data map[string]interface{}) error {
