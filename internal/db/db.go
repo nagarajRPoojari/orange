@@ -67,8 +67,13 @@ func (t *Oragedb) ProcessQuery(q string) (any, error) {
 }
 
 func (t *Oragedb) CreateCollection(op query.CreateOp) error {
+	db := t.createDB(op.Document)
+	t.dbMap.LoadOrStore(op.Document, db)
 
-	dbName := "test"
+	return t.schemaHandler.SavetoCatalog(op.Document, op.Schema)
+}
+
+func (t *Oragedb) createDB(dbName string) *storage.Storage[types.ID, InternalValueType] {
 
 	const MEMTABLE_THRESHOLD = 1024 * 2
 	ctx, _ := context.WithCancel(context.Background())
@@ -79,13 +84,14 @@ func (t *Oragedb) CreateCollection(op query.CreateOp) error {
 		storage.StorageOpts{
 			Directory:         t.opts.Dir,
 			MemtableThreshold: MEMTABLE_THRESHOLD,
+			WalLogDir:         path.Join(t.opts.Dir, dbName),
+			GCLogDir:          path.Join(t.opts.Dir, dbName),
 			TurnOnCompaction:  false,
-			TurnOnWal:         false,
+			TurnOnWal:         true,
 		})
 
-	t.dbMap.LoadOrStore(op.Document, db)
+	return db
 
-	return t.schemaHandler.SavetoCatalog(op.Document, op.Schema)
 }
 
 func (t *Oragedb) InsertDoc(op query.InsertOp) error {
@@ -100,7 +106,10 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 
 	val, ok := t.dbMap.Load(op.Document)
 	if !ok {
-		return errors.InsertError("failed to find document " + op.Document)
+		db := t.createDB(op.Document)
+		t.dbMap.LoadOrStore(op.Document, db)
+
+		val = db
 	}
 
 	db, ok := val.(*storage.Storage[types.ID, InternalValueType])
@@ -127,6 +136,8 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 			return fmt.Errorf("unexpected type for id: %T %v", id, id)
 		}
 
+		op.Value["_ID"] = castedId
+
 		res := db.Put(castedId, InternalValueType{Payload: op.Value})
 		return res.Err
 	}
@@ -142,12 +153,15 @@ func (t *Oragedb) GetDoc(op query.SelectOp) (map[string]interface{}, error) {
 
 	val, ok := t.dbMap.Load(op.Document)
 	if !ok {
-		return nil, errors.InsertError("failed to find document " + op.Document)
+		db := t.createDB(op.Document)
+		t.dbMap.LoadOrStore(op.Document, db)
+
+		val = db
 	}
 
 	db, ok := val.(*storage.Storage[types.ID, InternalValueType])
 	if !ok {
-		return nil, errors.InsertError("failed to get db for " + op.Document)
+		return nil, errors.SelectError("failed to get db for " + op.Document)
 	}
 
 	castedId := types.ID{K: op.ID}

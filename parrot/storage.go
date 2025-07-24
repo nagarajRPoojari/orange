@@ -87,6 +87,7 @@ func (t *Storage[K, V]) createOrLoadCollection() {
 			QueueHardLimit:    t.opts.QueueHardLimit,
 			QueueSoftLimit:    t.opts.QueueSoftLimit,
 			LogDir:            t.opts.WalLogDir,
+			TurnOnWal:         t.opts.TurnOnWal,
 		})
 	t.store = mt
 	t.manifest = mf

@@ -2,7 +2,6 @@ package schema
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"github.com/nagarajRPoojari/orange/internal/errors"
 	"github.com/nagarajRPoojari/orange/internal/query"
 	"github.com/nagarajRPoojari/orange/internal/types"
+	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 )
 
 // 1. take map[string]string,validate types
@@ -75,12 +75,12 @@ func recursiveSchemaVerifier(schema map[string]interface{}) error {
 		vString, ok := v.(string)
 		if ok {
 			if _, ok := types.AllTypes[vString]; !ok {
-				return errors.SchemaValidationError("invalid data type " + vString)
+				return errors.SchemaValidationError("invalid data type %v", vString)
 			}
 		} else {
 			vMap, ok := v.(map[string]interface{})
 			if !ok {
-				return errors.SchemaValidationError("invalid data type")
+				return errors.SchemaValidationError("invalid data type %v", vMap)
 			}
 			return recursiveSchemaVerifier(vMap)
 		}
@@ -95,7 +95,7 @@ func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error
 
 	bytes, err := json.Marshal(schema)
 	if err != nil {
-		return errors.SchemaJSONMarshallError("failed to json marshall")
+		return errors.SchemaJSONMarshallError("%v", err)
 	}
 
 	catalogPath := path.Join(t.opts.Dir, docName)
@@ -109,10 +109,11 @@ func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error
 			return errors.SchemaError("failed to save schema to catalog")
 		}
 	} else {
-		return errors.DuplicateSchemaError("for doc: " + docName)
+		return errors.DuplicateSchemaError("%s already exists", docName)
 	}
 
-	fmt.Println("successfull saved to catalog")
+	log.Infof("schema saved to catalog")
+
 	return nil
 }
 
@@ -129,17 +130,40 @@ func (t *SchemaHandler) LoadFromCatalog(docName string) (query.Schema, error) {
 
 	var schema query.Schema
 	if err := json.Unmarshal(data, &schema); err != nil {
-		return nil, errors.SchemaJSONUnMarshallError("failed to unmarshal schema")
+		return nil, errors.SchemaJSONUnmarshallError("%v", err)
 	}
 
 	return schema, nil
 }
 
 func (t *SchemaHandler) VerifyAndCastData(schema, data map[string]interface{}) error {
-	return recursiveDataCaster(schema, data)
+	err := recursiveDataCaster(schema, data)
+	if err != nil {
+		return err
+	}
+
+	missing := make([]string, 0)
+	// for now: user must provide id
+	if _, ok := data["_ID"]; !ok {
+		missing = append(missing, "_ID")
+	}
+
+	for key := range schema {
+		if _, ok := data[key]; !ok {
+			missing = append(missing, key)
+		}
+	}
+
+	if len(missing) > 0 {
+		return errors.MissingFields("%v", missing)
+	}
+
+	return nil
+
 }
 
 func recursiveDataCaster(schema, data map[string]interface{}) error {
+
 	for key, v := range data {
 		if key == "_ID" {
 			// idMap, err := loadSchemaId(schema)
@@ -157,7 +181,11 @@ func recursiveDataCaster(schema, data map[string]interface{}) error {
 		}
 
 		// try to cast to string
-		schemaField := schema[key]
+		schemaField, ok := schema[key]
+		if !ok {
+			return errors.UnknownField("%v", key)
+		}
+
 		schemaStringField, ok := schemaField.(string)
 		if ok {
 			casted, err := types.TypeCast(schemaStringField, v)
@@ -168,7 +196,7 @@ func recursiveDataCaster(schema, data map[string]interface{}) error {
 		} else {
 			vMap, ok := v.(map[string]interface{})
 			if !ok {
-				return errors.TypeCastError("invalid data type of " + key)
+				return errors.TypeCastError("invalid data type %T", key)
 			}
 			sMap, _ := schemaField.(map[string]interface{})
 			return recursiveDataCaster(sMap, vMap)

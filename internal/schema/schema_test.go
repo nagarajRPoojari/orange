@@ -19,7 +19,7 @@ func TestSchemaHandler_Verifier(t *testing.T) {
 			schema: query.Schema(map[string]interface{}{
 				"_ID":  map[string]interface{}{"auto_increment": false},
 				"name": "DATETIME",
-				"age":  map[string]interface{}{"name": "BLOB"},
+				"age":  map[string]interface{}{"name": "BYTE"},
 			}),
 			wantErr: false,
 		},
@@ -93,7 +93,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 				schema: query.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": false},
 					"name": "DATETIME",
-					"age":  map[string]interface{}{"name": "BLOB"},
+					"age":  map[string]interface{}{"name": "BYTE"},
 				}),
 			},
 			wantErr: false,
@@ -105,7 +105,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 				schema: query.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": false},
 					"name": "INT",
-					"age":  map[string]interface{}{"name": "BLOB"},
+					"age":  map[string]interface{}{"name": "BYTE"},
 				}),
 			},
 			wantErr: true,
@@ -117,7 +117,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 				schema: query.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": "int"}, // auto_increment should be bool
 					"name": "FLOAT64",
-					"age":  map[string]interface{}{"name": "BLOB"},
+					"age":  map[string]interface{}{"name": "BYTE"},
 				}),
 			},
 			wantErr: true,
@@ -178,6 +178,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 					"name":  "INT",
 				}),
 				data: map[string]interface{}{
+					"_ID":   0,
 					"young": "16282929292.19191.1092",
 					"old":   "false",
 					"name":  819282,
@@ -195,6 +196,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 					"name":  "INT",
 				}),
 				data: map[string]interface{}{
+					"_ID":   0,
 					"young": "16282929292.192",
 					"old":   "false",
 					"name":  819282,
@@ -211,6 +213,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 					"old":   "BOOL",
 				}),
 				data: map[string]interface{}{
+					"_ID":   0,
 					"young": "false",
 					"old":   "false",
 				},

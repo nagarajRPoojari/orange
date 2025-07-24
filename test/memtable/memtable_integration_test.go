@@ -8,7 +8,6 @@ package memtable_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -171,8 +170,6 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 		mts.Write(types.IntKey{K: i}, types.IntValue{V: int32(i)})
 	}
 
-	fmt.Println("write ended")
-
 	// A small gap to let it flush to disk & erase
 	// further read should come from disk sst
 	time.Sleep(1000 * time.Millisecond)
@@ -241,8 +238,6 @@ func TestMemtable_Rollback(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	// rollback: expected to bring back all vanished data
 	mts.RollbackAll()
-
-	fmt.Println("started reading")
 
 	for i := range totalOps {
 		wg.Add(1)
