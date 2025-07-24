@@ -277,4 +277,9 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 		"Expected result to match either wantedA or wantedB, but got: %v", got,
 	)
 
+	got, err = db.ProcessQuery(`DELETE DOCUMENT FROM users WHERE _ID = 89`)
+	assert.NoError(t, err)
+
+	got, err = db.ProcessQuery(`SELECT name, age FROM users WHERE _ID = 89`)
+	assert.Error(t, err)
 }

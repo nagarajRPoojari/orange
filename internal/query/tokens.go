@@ -11,6 +11,7 @@ const (
 	T_VALUE    TokenType = "VALUE"
 	T_SELECT   TokenType = "SELECT"
 	T_FROM     TokenType = "FROM"
+	T_DELETE   TokenType = "DELETE"
 
 	// Symbols
 	T_LPAREN         TokenType = "("
