@@ -9,7 +9,6 @@ package compactor
 import (
 	"container/heap"
 	"context"
-	"fmt"
 	"path/filepath"
 	"time"
 
@@ -158,7 +157,6 @@ func (t *SizeTiredCompaction[K, V]) Run(mf *metadata.Manifest, cache *v2.CacheMa
 		keyCount := 0
 		index := 0
 
-		fmt.Println(levelL.GetTables())
 		// Load all sst from level=l
 		for id, table := range levelL.GetTables() {
 
@@ -170,15 +168,15 @@ func (t *SizeTiredCompaction[K, V]) Run(mf *metadata.Manifest, cache *v2.CacheMa
 			totalSizeInBytes += int(table.SizeInBytes)
 			keyCount += len(sst)
 
-			if index == tablesCount {
-				break
-			}
-
 			index++
 
 			l0TablesIds = append(l0TablesIds, id)
 			l0TablePaths = append(l0TablePaths, table.DBPath)
 			l0TableIndexPaths = append(l0TableIndexPaths, table.IndexPath)
+
+			if index == tablesCount {
+				break
+			}
 		}
 
 		// K-way merge using next-pointer min heap
