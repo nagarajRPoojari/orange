@@ -25,7 +25,9 @@ func main() {
 	allTYpes.WriteString("import \"github.com/nagarajRPoojari/orange/internal/errors\"\n\n")
 	allTYpes.WriteString("var AllTypes = map[string]struct{}{\n")
 
-	typeCaster.WriteString("func TypeCast(castTo string, val interface{}) (interface{}, error) { \n")
+	typeCaster.WriteString(
+		"func TypeCast(castTo string, val interface{}) (interface{}, error) { \n",
+	)
 	typeCaster.WriteString("switch castTo { \n")
 
 	for i, decl := range node.Decls {

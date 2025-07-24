@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/nagarajRPoojari/orange/parrot/io"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFileManager_WriteAndRead(t *testing.T) {
@@ -27,15 +28,11 @@ func TestFileManager_WriteAndRead(t *testing.T) {
 	writer.Write(expected)
 
 	reader, err := manager.OpenForRead(testFilePath)
-	if err != nil {
-		t.Errorf("Got unexpected error=%v", err)
-	}
+	assert.NoError(t, err)
 	defer reader.Close()
 
 	got := reader.GetPayload()
-	if string(got) != string(expected) {
-		t.Errorf("Expected %q, got %q", expected, got)
-	}
+	assert.Equal(t, string(expected), string(got))
 }
 
 func TestFileManager_MultipleReadsReturnSameInstance(t *testing.T) {
@@ -47,19 +44,10 @@ func TestFileManager_MultipleReadsReturnSameInstance(t *testing.T) {
 	manager := io.GetFileManager()
 
 	r1, err := manager.OpenForRead(testFilePath)
-	if err != nil {
-		t.Errorf("Got unexpected error=%v", err)
-	}
+	assert.NoError(t, err)
 	r2, err := manager.OpenForRead(testFilePath)
-	if err != nil {
-		t.Errorf("Got unexpected error=%v", err)
-	}
+	assert.NoError(t, err)
 
-	if r1 != r2 {
-		t.Error("Expected same FileReader instance for shared read, got different instances")
-	}
-
-	if string(r1.GetPayload()) != string(r2.GetPayload()) {
-		t.Errorf("Expected both payloads to be equal, go different payload data")
-	}
+	assert.Equal(t, r1, r2)
+	assert.Equal(t, string(r1.GetPayload()), string(r2.GetPayload()))
 }

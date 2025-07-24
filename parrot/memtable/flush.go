@@ -35,7 +35,11 @@ type Flusher[K types.Key, V types.Value] struct {
 }
 
 // NewFlusher creates new instance of Flusher
-func NewFlusher[K types.Key, V types.Value](q *Queue[K, V], mf *metadata.Manifest, opts FlusherOpts) *Flusher[K, V] {
+func NewFlusher[K types.Key, V types.Value](
+	q *Queue[K, V],
+	mf *metadata.Manifest,
+	opts FlusherOpts,
+) *Flusher[K, V] {
 	return &Flusher[K, V]{
 		opts: opts,
 		q:    q,

@@ -22,7 +22,11 @@ type IndexPayload[K types.Key, V types.Value] struct {
 	Size   int64
 }
 
-func Encode[K types.Key, V types.Value](dbFile *os.File, indexFile *os.File, kv []types.Payload[K, V]) error {
+func Encode[K types.Key, V types.Value](
+	dbFile *os.File,
+	indexFile *os.File,
+	kv []types.Payload[K, V],
+) error {
 	indexEncoder := gob.NewEncoder(indexFile)
 
 	for _, item := range kv {

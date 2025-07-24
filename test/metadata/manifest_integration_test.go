@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
@@ -57,12 +56,8 @@ func TestManifest_GetLevel(t *testing.T) {
 				LSM0: tt.fields.lsm0,
 			}
 			level, err := tr.GetLSM().GetLevel(tt.args.l)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("error() %v", err.Error())
-			}
-			if got := level; !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Manifest.GetLevel() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, err != nil, "Unexpected error state: %v", err)
+			assert.Equal(t, tt.want, level, "Manifest.GetLevel() mismatch")
 		})
 	}
 }
@@ -79,15 +74,11 @@ func TestManifest_Load(t *testing.T) {
 	err := m.Load()
 	assert.NoError(t, err)
 
-	// File should be created
 	_, statErr := os.Stat(manifestPath)
 	assert.NoError(t, statErr)
 
-	// LSM object should be non-nil
 	assert.NotNil(t, m.LSM0)
 
-	// ---- Test case 2: file exists, should load data into LSM ----
-	// Simulate updated file content
 	lsmDataView := metadata.NewLSMView(testName)
 	lsmData := lsmDataView.ToLSM()
 
@@ -96,7 +87,6 @@ func TestManifest_Load(t *testing.T) {
 	err = os.WriteFile(manifestPath, jsonData, 0644)
 	assert.NoError(t, err)
 
-	// Reload
 	m2 := metadata.NewManifest(testName, metadata.ManifestOpts{Dir: tmpDir})
 	err = m2.Load()
 	assert.NoError(t, err)

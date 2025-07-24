@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/nagarajRPoojari/orange/parrot/wal"
+	"github.com/stretchr/testify/assert"
 )
 
 type event struct {
@@ -26,9 +26,7 @@ type event struct {
 func TestWAL_Write(t *testing.T) {
 	logFile := filepath.Join(t.TempDir(), "test.gob")
 	wal, err := wal.NewWAL[event](logFile)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	testEvent := event{Data: "test data"}
 	wal.Append(testEvent)
@@ -36,26 +34,17 @@ func TestWAL_Write(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	data, err := os.ReadFile(logFile)
-	if err != nil {
-		t.Error(err)
-	}
 
 	var decodedEvent event
 	err = gob.NewDecoder(bytes.NewReader(data)).Decode(&decodedEvent)
-	if err != nil {
-		t.Error(err)
-	}
-	if decodedEvent != testEvent {
-		t.Errorf("expected %v, got %v", testEvent, decodedEvent)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, decodedEvent, testEvent)
 }
 
 func TestWAL_Replay(t *testing.T) {
 	logFile := filepath.Join(t.TempDir(), "test.log")
 	wl, err := wal.NewWAL[event](logFile)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	testEvents := []event{}
 	for i := range 10 {
@@ -67,11 +56,6 @@ func TestWAL_Replay(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	events, err := wal.Replay[event](logFile)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if !reflect.DeepEqual(events, testEvents) {
-		t.Errorf("expected %v, got %v", testEvents, events)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, testEvents, events)
 }

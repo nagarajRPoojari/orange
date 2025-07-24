@@ -42,25 +42,46 @@ func (t StringKey) Less(other any) bool {
 
 type Value interface {
 	SizeOf() uintptr
+	MarkDeleted()
+	IsDeleted() bool
 }
 
 func SizeOfValue[V any](v V) uintptr {
 	return unsafe.Sizeof(v)
 }
-func (t StringValue) SizeOf() uintptr {
-	return uintptr(len(t.V))
-}
 
 type IntValue struct {
 	V int32
+	D bool
 }
 
-func (t IntValue) SizeOf() uintptr {
+func (t *IntValue) SizeOf() uintptr {
 	return 4
+}
+
+func (t *IntValue) MarkDeleted() {
+	t.D = true
+}
+
+func (t *IntValue) IsDeleted() bool {
+	return t.D
 }
 
 type StringValue struct {
 	V string
+	D bool
+}
+
+func (t *StringValue) MarkDeleted() {
+	t.D = true
+}
+
+func (t *StringValue) IsDeleted() bool {
+	return t.D
+}
+
+func (t *StringValue) SizeOf() uintptr {
+	return uintptr(len(t.V))
 }
 
 // Payload

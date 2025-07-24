@@ -23,6 +23,5 @@ func TestSchemaHandler_LoadFromCatalog(t *testing.T) {
 
 	got, err := sh.LoadFromCatalog(docName)
 	assert.NoError(t, err, assert.AnError)
-
 	assert.Equal(t, wanted, got)
 }

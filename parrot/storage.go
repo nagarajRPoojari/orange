@@ -54,7 +54,11 @@ type Storage[K types.Key, V types.Value] struct {
 	opts StorageOpts
 }
 
-func NewStorage[K types.Key, V types.Value](name string, ctx context.Context, opts StorageOpts) *Storage[K, V] {
+func NewStorage[K types.Key, V types.Value](
+	name string,
+	ctx context.Context,
+	opts StorageOpts,
+) *Storage[K, V] {
 	v := &Storage[K, V]{name: name, opts: opts}
 	v.createOrLoadCollection()
 	v.reader = NewReader(v.store, ReaderOpts{})
@@ -64,8 +68,13 @@ func NewStorage[K types.Key, V types.Value](name string, ctx context.Context, op
 
 		gc := compactor.NewGC(
 			v.manifest,
-			(*v2.CacheManager[types.IntKey, types.IntValue])(v.store.DecoderCache),
-			&compactor.SizeTiredCompaction[types.IntKey, types.IntValue]{Opts: compactor.SizeTiredCompactionOpts{Level0MaxSizeInBytes: 1024 * 2, MaxSizeInBytesGrowthFactor: 2}},
+			(*v2.CacheManager[K, V])(v.store.DecoderCache),
+			&compactor.SizeTiredCompaction[K, V]{
+				Opts: compactor.SizeTiredCompactionOpts{
+					Level0MaxSizeInBytes:       1024 * 2,
+					MaxSizeInBytesGrowthFactor: 2,
+				},
+			},
 			opts.GCLogDir,
 		)
 		go gc.Run(ctx)
@@ -101,6 +110,10 @@ func (t *Storage[K, V]) Put(key K, value V) WriteStatus {
 	return t.writer.Put(key, value)
 }
 
+func (t *Storage[K, V]) Delete(key K, tomstone V) WriteStatus {
+	return t.writer.Delete(key, tomstone)
+}
+
 type ReadStatus[V types.Value] struct {
 	Value V
 	Err   error
@@ -115,7 +128,10 @@ type Reader[K types.Key, V types.Value] struct {
 	opts ReaderOpts
 }
 
-func NewReader[K types.Key, V types.Value](store *memtable.MemtableStore[K, V], opts ReaderOpts) *Reader[K, V] {
+func NewReader[K types.Key, V types.Value](
+	store *memtable.MemtableStore[K, V],
+	opts ReaderOpts,
+) *Reader[K, V] {
 	r := &Reader[K, V]{
 		store: store,
 		opts:  opts,
@@ -129,7 +145,7 @@ func NewReader[K types.Key, V types.Value](store *memtable.MemtableStore[K, V], 
 func (t *Reader[K, V]) Get(key K) ReadStatus[V] {
 	val, ok := t.store.Read(key)
 	if !ok {
-		return ReadStatus[V]{Err: errors.KeyNotFoundError}
+		return ReadStatus[V]{Err: errors.RaiseKeyNotFoundErr("key=%v", key)}
 	}
 	return ReadStatus[V]{Value: val}
 }
@@ -147,7 +163,10 @@ type Writer[K types.Key, V types.Value] struct {
 	opts WriterOpts
 }
 
-func NewWriter[K types.Key, V types.Value](store *memtable.MemtableStore[K, V], opts WriterOpts) *Writer[K, V] {
+func NewWriter[K types.Key, V types.Value](
+	store *memtable.MemtableStore[K, V],
+	opts WriterOpts,
+) *Writer[K, V] {
 	r := &Writer[K, V]{
 		store: store,
 		opts:  opts,
@@ -159,5 +178,10 @@ func NewWriter[K types.Key, V types.Value](store *memtable.MemtableStore[K, V], 
 
 func (t *Writer[K, V]) Put(key K, value V) WriteStatus {
 	_ = t.store.Write(key, value)
+	return WriteStatus{Err: nil}
+}
+
+func (t *Writer[K, V]) Delete(key K, tomstone V) WriteStatus {
+	_ = t.store.Delete(key, tomstone)
 	return WriteStatus{Err: nil}
 }

@@ -51,7 +51,12 @@ type GC[K types.Key, V types.Value] struct {
 	wal *wal.WAL[Event]
 }
 
-func NewGC[K types.Key, V types.Value](mf *metadata.Manifest, cache *v2.CacheManager[K, V], strategy CompactionStrategy[K, V], logDir string) *GC[K, V] {
+func NewGC[K types.Key, V types.Value](
+	mf *metadata.Manifest,
+	cache *v2.CacheManager[K, V],
+	strategy CompactionStrategy[K, V],
+	logDir string,
+) *GC[K, V] {
 	logPath := filepath.Join(logDir, "gc-wal.log")
 	wl, _ := wal.NewWAL[Event](logPath)
 
@@ -130,7 +135,12 @@ type SizeTiredCompaction[K types.Key, V types.Value] struct {
 	Opts SizeTiredCompactionOpts
 }
 
-func (t *SizeTiredCompaction[K, V]) Run(mf *metadata.Manifest, cache *v2.CacheManager[K, V], wal *wal.WAL[Event], l int) {
+func (t *SizeTiredCompaction[K, V]) Run(
+	mf *metadata.Manifest,
+	cache *v2.CacheManager[K, V],
+	wal *wal.WAL[Event],
+	l int,
+) {
 	levelL, err := mf.GetLSM().GetLevel(l)
 	if err != nil {
 		return
@@ -138,8 +148,19 @@ func (t *SizeTiredCompaction[K, V]) Run(mf *metadata.Manifest, cache *v2.CacheMa
 
 	size := levelL.SizeInBytes.Load()
 	// check level-l overflow according to size tired compaction strategy
-	if int64(size) > t.Opts.Level0MaxSizeInBytes*max(int64(l)*int64(t.Opts.MaxSizeInBytesGrowthFactor), 1) {
-		log.Infof("Size(level=%d)=%d, growth_factor=%d, l0MaxSize=%d", l, size, t.Opts.MaxSizeInBytesGrowthFactor, t.Opts.MaxSizeInBytesGrowthFactor)
+	if int64(
+		size,
+	) > t.Opts.Level0MaxSizeInBytes*max(
+		int64(l)*int64(t.Opts.MaxSizeInBytesGrowthFactor),
+		1,
+	) {
+		log.Infof(
+			"Size(level=%d)=%d, growth_factor=%d, l0MaxSize=%d",
+			l,
+			size,
+			t.Opts.MaxSizeInBytesGrowthFactor,
+			t.Opts.MaxSizeInBytesGrowthFactor,
+		)
 		log.Infof("Compaction started on level ", l)
 
 		tablesCount := levelL.TablesCount()
@@ -241,7 +262,10 @@ func (t *SizeTiredCompaction[K, V]) Run(mf *metadata.Manifest, cache *v2.CacheMa
 		// for now no two go routines can SetSSTable on same level
 		// - only gc can append table for level > 0
 		// - only flusher can append table for lebel = 0
-		nextLevel.SetSSTable(l1TablesNextId, metadata.NewSSTable(dbPath, indexPath, int64(totalSizeInBytes)))
+		nextLevel.SetSSTable(
+			l1TablesNextId,
+			metadata.NewSSTable(dbPath, indexPath, int64(totalSizeInBytes)),
+		)
 
 		// clearing only read tables
 		levelL.Clear(l0TablesIds)

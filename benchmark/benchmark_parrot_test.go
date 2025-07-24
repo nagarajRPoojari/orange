@@ -43,7 +43,7 @@ func BenchmarkMemtable_Read(t *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	db := storage.NewStorage[types.IntKey, types.IntValue](
+	db := storage.NewStorage[types.IntKey, *types.IntValue](
 		dbName,
 		ctx,
 		storage.StorageOpts{
@@ -60,7 +60,7 @@ func BenchmarkMemtable_Read(t *testing.B) {
 	totalOps := int(MEMTABLE_THRESHOLD/d.SizeOf()) * multiples
 
 	for i := range totalOps {
-		db.Put(types.IntKey{K: i}, types.IntValue{V: int32(i)})
+		db.Put(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
 
 	time.Sleep(1 * time.Second)
@@ -80,7 +80,7 @@ func BenchmarkMemtable_Read(t *testing.B) {
 
 			readStatus := db.Get(types.IntKey{K: i})
 			v := types.IntValue{V: int32(i)}
-			if readStatus.Err != nil || readStatus.Value != v {
+			if readStatus.Err != nil || *readStatus.Value != v {
 				t.Errorf("Expected %v, got %v", v, readStatus)
 			}
 		}(i)
@@ -116,7 +116,7 @@ func BenchmarkMemtable_Write_With_WAL(t *testing.B) {
 	go mf.Sync(ctx)
 
 	// overflow first memtable to trigger flush
-	mts := memtable.NewMemtableStore[types.IntKey, types.IntValue](mf,
+	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](mf,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: MEMTABLE_THRESHOLD,
 			LogDir:            temp,
@@ -130,7 +130,7 @@ func BenchmarkMemtable_Write_With_WAL(t *testing.B) {
 	start := time.Now()
 
 	for i := range totalOps {
-		mts.Write(types.IntKey{K: i}, types.IntValue{V: int32(i)})
+		mts.Write(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
 
 	t.Logf("total ops = %d", totalOps)
@@ -162,7 +162,7 @@ func BenchmarkMemtable_Write_Without_WAL(t *testing.B) {
 	go mf.Sync(ctx)
 
 	// overflow first memtable to trigger flush
-	mts := memtable.NewMemtableStore[types.IntKey, types.IntValue](mf,
+	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](mf,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: MEMTABLE_THRESHOLD,
 			LogDir:            temp,
@@ -176,7 +176,7 @@ func BenchmarkMemtable_Write_Without_WAL(t *testing.B) {
 	start := time.Now()
 
 	for i := range totalOps {
-		mts.Write(types.IntKey{K: i}, types.IntValue{V: int32(i)})
+		mts.Write(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
 
 	t.Logf("total ops = %d", totalOps)

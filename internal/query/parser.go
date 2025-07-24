@@ -224,3 +224,36 @@ func extractDocumentNameFromSelectQuery(input string) (string, error) {
 	}
 	return "", errors.SQLSyntaxError("failed to extract document name")
 }
+
+// ParseSelectQuery parses a DELETE query and returns a SelectOp.
+//
+// Expected format:
+//
+//	DELETE DOCUMENT FROM <document> WHERE _ID=<key>
+//
+// Returns an error if parsing fails or if _ID is missing.
+func (t *Parser) ParseDeleteQuery() (DeleteOp, error) {
+	var null DeleteOp
+	name, err := extractDocumentNameFromDeleteQuery(t.input)
+	if err != nil {
+		return null, err
+	}
+
+	_id, err := extractID(t.input)
+	if err != nil {
+		return null, err
+	}
+	return DeleteOp{
+		Document: name,
+		ID:       _id,
+	}, nil
+}
+
+func extractDocumentNameFromDeleteQuery(input string) (string, error) {
+	re := regexp.MustCompile(`(?i)DELETE\s+DOCUMENT\s+FROM\s+(\w+)\s+WHERE\s+_ID\s*=\s*[\w\d]+`)
+	match := re.FindStringSubmatch(input)
+	if len(match) > 1 {
+		return match[1], nil
+	}
+	return "", errors.SQLSyntaxError("failed to extract document name from DELETE query")
+}

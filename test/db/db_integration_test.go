@@ -26,7 +26,6 @@ func TestOragedb_Init(t *testing.T) {
 	)
 
 	assert.NotNil(t, db)
-
 }
 
 func TestOrangedb_SelectDoc(t *testing.T) {
@@ -51,7 +50,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	)
 
 	assert.FileExists(t, path.Join(dir, "catalog", "test"))
-	assert.NoError(t, err, assert.AnError)
+	assert.NoError(t, err)
 	err = db.InsertDoc(
 		query.InsertOp{
 			Document: "test",
@@ -66,7 +65,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	)
 
 	assert.DirExists(t, path.Join(dir, "manifest"))
-	assert.NoError(t, err, assert.AnError)
+	assert.NoError(t, err)
 
 	got, err := db.GetDoc(
 		query.SelectOp{
@@ -77,11 +76,68 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 
 	wanted := map[string]interface{}(
 		map[string]interface{}{
-			"_ID": types.ID{K: int64(90102)}, "age": map[string]interface{}{"name": types.INT8(12)}, "name": types.STRING("hello"),
+			"_ID": types.ID{
+				K: int64(90102),
+			}, "age": map[string]interface{}{"name": types.INT8(12)}, "name": types.STRING("hello"),
 		},
 	)
 
 	assert.Equal(t, wanted, got)
+}
+
+func TestOrangedb_DeleteDoc(t *testing.T) {
+	dir := t.TempDir()
+	db := odb.NewOrangedb(
+		odb.DBopts{
+			Dir: dir,
+		},
+	)
+
+	assert.NotNil(t, db)
+	err := db.CreateCollection(
+		query.CreateOp{
+			Document: "test",
+			Schema: query.Schema(map[string]interface{}{
+				"_ID":  map[string]interface{}{"auto_increment": false},
+				"name": "STRING",
+				"age":  map[string]interface{}{"name": "INT8"},
+			}),
+		},
+	)
+
+	assert.FileExists(t, path.Join(dir, "catalog", "test"))
+	assert.NoError(t, err)
+	err = db.InsertDoc(
+		query.InsertOp{
+			Document: "test",
+			Value: map[string]interface{}{
+				"_ID":  int64(90102),
+				"name": "hello",
+				"age": map[string]interface{}{
+					"name": 12,
+				},
+			},
+		},
+	)
+
+	assert.DirExists(t, path.Join(dir, "manifest"))
+	assert.NoError(t, err)
+
+	err = db.DeleteDoc(
+		query.DeleteOp{
+			Document: "test",
+			ID:       int64(90102),
+		},
+	)
+
+	assert.NoError(t, err)
+	_, err = db.GetDoc(
+		query.SelectOp{
+			Document: "test",
+			ID:       int64(90102),
+		},
+	)
+	assert.Error(t, err)
 }
 
 func TestOragedb_InsertDoc(t *testing.T) {
@@ -106,7 +162,7 @@ func TestOragedb_InsertDoc(t *testing.T) {
 	)
 
 	assert.FileExists(t, path.Join(dir, "catalog", "test"))
-	assert.NoError(t, err, assert.AnError)
+	assert.NoError(t, err)
 	err = db.InsertDoc(
 		query.InsertOp{
 			Document: "test",
@@ -121,7 +177,7 @@ func TestOragedb_InsertDoc(t *testing.T) {
 	)
 
 	assert.DirExists(t, path.Join(dir, "manifest"))
-	assert.NoError(t, err, assert.AnError)
+	assert.NoError(t, err)
 }
 
 func TestOragedb_CreateCollection(t *testing.T) {
@@ -174,9 +230,8 @@ func TestOragedb_CreateCollection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr := odb.NewOrangedb(tt.fields.opts)
-			if err := tr.CreateCollection(tt.args.op); (err != nil) != tt.wantErr {
-				t.Errorf("Oragedb.CreateCollection() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			err := tr.CreateCollection(tt.args.op)
+			assert.Equal(t, tt.wantErr, err != nil, "Oragedb.CreateCollection() error = %v", err)
 		})
 	}
 }
@@ -185,25 +240,30 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 	log.Disable()
 
 	db := odb.NewOrangedb(odb.DBopts{Dir: t.TempDir()})
-	_, err := db.ProcessQuery(`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`)
-
+	_, err := db.ProcessQuery(
+		`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`,
+	)
 	assert.NoError(t, err)
 
 	for i := 1; i <= 100; i++ {
 		name := fmt.Sprintf("User%d", i)
 		age := i
-		query := fmt.Sprintf(`INSERT VALUE INTO users {"_ID": %d, "name": "%s", "age": {"value": %d} }`, i, name, age)
+		query := fmt.Sprintf(
+			`INSERT VALUE INTO users {"_ID": %d, "name": "%s", "age": {"value": %d} }`,
+			i,
+			name,
+			age,
+		)
 		_, err := db.ProcessQuery(query)
-		if err != nil {
-			log.Fatalf("Insert failed for ID %d: %v", i, err)
-		}
+		assert.NoError(t, err, "Insert failed for ID %d: %v", i, err)
 	}
 
 	got, err := db.ProcessQuery(`SELECT name, age FROM users WHERE _ID = 89`)
-
 	wanted := map[string]interface{}(
 		map[string]interface{}{
-			"_ID": types.ID{K: 89}, "age": map[string]interface{}{"value": types.INT64(89)}, "name": types.STRING("User89")},
+			"_ID": types.ID{
+				K: 89,
+			}, "age": map[string]interface{}{"value": types.INT64(89)}, "name": types.STRING("User89")},
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, wanted, got)

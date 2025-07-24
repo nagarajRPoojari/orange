@@ -19,11 +19,20 @@ type InternalValueType struct {
 	// to only gob registered data types to help unambiguous
 	// gob decoding
 	Payload map[string]interface{}
+	d       bool
 }
 
 // @todo: fix
-func (t InternalValueType) SizeOf() uintptr {
+func (t *InternalValueType) SizeOf() uintptr {
 	return 8
+}
+
+func (t *InternalValueType) MarkDeleted() {
+	t.d = true
+}
+
+func (t *InternalValueType) IsDeleted() bool {
+	return t.d
 }
 
 type DBopts struct {
@@ -83,13 +92,13 @@ func (t *Oragedb) CreateCollection(op query.CreateOp) error {
 }
 
 // createDB initializes a new parrot instance
-func (t *Oragedb) createDB(dbName string) *storage.Storage[types.ID, InternalValueType] {
+func (t *Oragedb) createDB(dbName string) *storage.Storage[types.ID, *InternalValueType] {
 
 	// @todo: read from config
 	const MEMTABLE_THRESHOLD = 1024 * 2
 	ctx, _ := context.WithCancel(context.Background())
 
-	db := storage.NewStorage[types.ID, InternalValueType](
+	db := storage.NewStorage[types.ID, *InternalValueType](
 		dbName,
 		ctx,
 		storage.StorageOpts{
@@ -124,7 +133,7 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 		val = db
 	}
 
-	db, ok := val.(*storage.Storage[types.ID, InternalValueType])
+	db, ok := val.(*storage.Storage[types.ID, *InternalValueType])
 	if !ok {
 		return errors.InsertError("failed to get db for " + op.Document)
 	}
@@ -150,7 +159,7 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 
 		op.Value["_ID"] = castedId
 
-		res := db.Put(castedId, InternalValueType{Payload: op.Value})
+		res := db.Put(castedId, &InternalValueType{Payload: op.Value})
 		return res.Err
 	}
 
@@ -172,7 +181,7 @@ func (t *Oragedb) GetDoc(op query.SelectOp) (map[string]interface{}, error) {
 		val = db
 	}
 
-	db, ok := val.(*storage.Storage[types.ID, InternalValueType])
+	db, ok := val.(*storage.Storage[types.ID, *InternalValueType])
 	if !ok {
 		return nil, errors.SelectError("failed to get db for " + op.Document)
 	}
@@ -180,8 +189,32 @@ func (t *Oragedb) GetDoc(op query.SelectOp) (map[string]interface{}, error) {
 	castedId := types.ID{K: op.ID}
 	res := db.Get(castedId)
 
+	if res.Err != nil {
+		return nil, res.Err
+	}
+
 	// verifying loaded data & typecasting back to compatible schema types
 	t.schemaHandler.VerifyAndCastData(schema, res.Value.Payload)
 
 	return res.Value.Payload, nil
+}
+
+// DeleteDoc deletes a document by ID from the specified collection.
+func (t *Oragedb) DeleteDoc(op query.DeleteOp) error {
+	val, ok := t.dbMap.Load(op.Document)
+	if !ok {
+		db := t.createDB(op.Document)
+		t.dbMap.LoadOrStore(op.Document, db)
+
+		val = db
+	}
+
+	db, ok := val.(*storage.Storage[types.ID, *InternalValueType])
+	if !ok {
+		return errors.DeleteError("failed to delete db for " + op.Document)
+	}
+
+	castedId := types.ID{K: op.ID}
+	res := db.Delete(castedId, &InternalValueType{})
+	return res.Err
 }

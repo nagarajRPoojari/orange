@@ -75,7 +75,7 @@ func NewWAL[E Event](path string) (*WAL[E], error) {
 func Replay[E Event](path string) ([]E, error) {
 	fm := fio.GetFileManager()
 	if !fm.Exists(path) {
-		return nil, customerr.FileNotFoundError
+		return nil, customerr.FileNotFounderr("file=%v", fm)
 	}
 
 	fr, err := fm.OpenForRead(path)

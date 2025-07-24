@@ -162,3 +162,47 @@ func TestParser_ParseSelectQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestParser_ParseDeleteQuery(t *testing.T) {
+	type fields struct {
+		input string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    DeleteOp
+		wantErr bool
+	}{
+		{
+			name: "valid select query",
+			fields: fields{
+				input: `DELETE DOCUMENT FROM user WHERE _ID = 12`,
+			},
+			want:    DeleteOp{Document: "user", ID: 12},
+			wantErr: false,
+		},
+		{
+			name: "invalid select query (without _ID)",
+			fields: fields{
+				input: `DELETE DOCUMENT FROM user WHERE _ID = `,
+			},
+			want:    DeleteOp{},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &Parser{
+				input: tt.fields.input,
+			}
+			got, err := tr.ParseDeleteQuery()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Parser.ParseDeleteQuery() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Parser.ParseDeleteQuery() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
