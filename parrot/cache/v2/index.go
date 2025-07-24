@@ -98,6 +98,7 @@ type CacheUnit[K types.Key, V types.Value] struct {
 //   - will be executed only once per cache unit
 func (dc *CacheUnit[K, V]) loadIndex() {
 	dc.onceDecodeIndex.Do(func() {
+		// @todo: pre allocate
 		var result []utils.IndexPayload[K, V]
 		indexDecoder := gob.NewDecoder(bytes.NewReader(dc.indexPayload))
 
@@ -167,6 +168,7 @@ func (dc *CacheUnit[K, V]) getDecodedForAll() ([]types.Payload[K, V], error) {
 		return nil, dc.err
 	}
 
+	// @todo: pre allocate
 	result := make([]types.Payload[K, V], 0)
 
 	for _, k := range dc.indexDecoded {

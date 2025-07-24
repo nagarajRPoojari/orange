@@ -12,15 +12,11 @@ import (
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 )
 
-// 1. take map[string]string,validate types
-// 2. take document name and map[string]interface{},
-//		load schema for given doc from catalog (so, map[string]string), validate
-//		typecast to parrot native types from json types
-
 type SchemaHandlerOpts struct {
 	Dir string
 }
 
+// SchemaHandler manages document schemas, including caching and validation.
 type SchemaHandler struct {
 	// cache of loaded schema
 	cache map[string]query.Schema
@@ -28,6 +24,8 @@ type SchemaHandler struct {
 	opts *SchemaHandlerOpts
 }
 
+// NewSchemaHandler creates a new SchemaHandler with the given options.
+// Initializes an empty in-memory schema cache
 func NewSchemaHandler(opts *SchemaHandlerOpts) *SchemaHandler {
 	return &SchemaHandler{
 		cache: map[string]query.Schema{},
@@ -35,6 +33,8 @@ func NewSchemaHandler(opts *SchemaHandlerOpts) *SchemaHandler {
 	}
 }
 
+// VerifySchema checks the validity of a given schema.
+// Validates the presence and type of _ID and all nested fields.
 func (t *SchemaHandler) VerifySchema(schema query.Schema) error {
 	// validating _ID if provided
 	_, err := loadSchemaId(schema)
@@ -62,6 +62,8 @@ func loadSchemaId(schema query.Schema) (map[string]interface{}, error) {
 	return id_map, nil
 }
 
+// recursiveSchemaVerifier recursively scans schema and validates give type
+// and ensures it is supported natively by parrot
 func recursiveSchemaVerifier(schema map[string]interface{}) error {
 	if schema == nil || len(schema) == 0 {
 		return errors.SchemaValidationError("missing data type")
@@ -88,6 +90,8 @@ func recursiveSchemaVerifier(schema map[string]interface{}) error {
 	return nil
 }
 
+// SavetoCatalog saves schema to catalog directory,
+// might throw error if duplicate document name found
 func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error {
 	if err := t.VerifySchema(schema); err != nil {
 		return err
@@ -117,6 +121,8 @@ func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error
 	return nil
 }
 
+// LoadFromCatalog loads schema from catalog
+// @todo: cache loaded schema
 func (t *SchemaHandler) LoadFromCatalog(docName string) (query.Schema, error) {
 	if schema, ok := t.cache[docName]; ok {
 		return schema, nil
@@ -136,6 +142,13 @@ func (t *SchemaHandler) LoadFromCatalog(docName string) (query.Schema, error) {
 	return schema, nil
 }
 
+// VerifyAndCastData verifies strict schema and tries for
+// possible type conversion,
+//
+// catches:
+//   - missing fields
+//   - invalid data type
+//   - @todo: constraint
 func (t *SchemaHandler) VerifyAndCastData(schema, data map[string]interface{}) error {
 	err := recursiveDataCaster(schema, data)
 	if err != nil {
