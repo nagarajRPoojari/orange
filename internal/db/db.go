@@ -78,6 +78,8 @@ func (t *Oragedb) ProcessQuery(q string) (any, error) {
 		return nil, t.InsertDoc(v)
 	case query.SelectOp:
 		return t.GetDoc(v)
+	case query.DeleteOp:
+		return nil, t.DeleteDoc(v)
 	}
 
 	return nil, errors.SQLSyntaxError("invalid op")

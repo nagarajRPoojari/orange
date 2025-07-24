@@ -35,6 +35,8 @@ func (t Parser) parse() (Query, error) {
 		return t.ParseInsertQuery()
 	case strings.HasPrefix(input, string(T_CREATE)):
 		return t.ParseCreateQuery()
+	case strings.HasPrefix(input, string(T_DELETE)):
+		return t.ParseDeleteQuery()
 	default:
 		return nil, errors.SQLSyntaxError("unsupported statement")
 	}
