@@ -102,7 +102,11 @@ func (t *FileManager) openForSharedRead(path string) (*FileReader, error) {
 
 	// empty files can't be opened through mmap
 	if info.Size() == 0 || info.IsDir() {
-		return nil, fmt.Errorf("invalid file for mmap: size=%d, isDir=%v", info.Size(), info.IsDir())
+		return nil, fmt.Errorf(
+			"invalid file for mmap: size=%d, isDir=%v",
+			info.Size(),
+			info.IsDir(),
+		)
 	}
 
 	mmapData, err := mmap.Map(f, mmap.RDONLY, 0)

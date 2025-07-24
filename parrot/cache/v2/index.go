@@ -17,6 +17,8 @@ import (
 	fio "github.com/nagarajRPoojari/orange/parrot/io"
 	"github.com/nagarajRPoojari/orange/parrot/types"
 	"github.com/nagarajRPoojari/orange/parrot/utils"
+
+	perrors "github.com/nagarajRPoojari/orange/parrot/errors"
 )
 
 // CacheManager caches SSTables, acts as only entrypoint
@@ -33,7 +35,11 @@ func NewCacheManager[K types.Key, V types.Value]() *CacheManager[K, V] {
 }
 
 // Get loads value for single key
-func (m *CacheManager[K, V]) Get(dbPath string, indexPath string, key K) (types.Payload[K, V], error) {
+func (m *CacheManager[K, V]) Get(
+	dbPath string,
+	indexPath string,
+	key K,
+) (types.Payload[K, V], error) {
 	val, loaded := m.cache.Load(dbPath)
 	if loaded {
 		return val.(*CacheUnit[K, V]).GetDecodedForKey(key)
@@ -48,14 +54,22 @@ func (m *CacheManager[K, V]) Get(dbPath string, indexPath string, key K) (types.
 	}
 
 	// Create new cache and use LoadOrStore to avoid race
-	newCache := &CacheUnit[K, V]{onceDecodeAllValues: sync.Once{}, onceDecodeIndex: sync.Once{}, dbPayload: dbFileReader.GetPayload(), indexPayload: indexFileReader.GetPayload()}
+	newCache := &CacheUnit[K, V]{
+		onceDecodeAllValues: sync.Once{},
+		onceDecodeIndex:     sync.Once{},
+		dbPayload:           dbFileReader.GetPayload(),
+		indexPayload:        indexFileReader.GetPayload(),
+	}
 	actual, _ := m.cache.LoadOrStore(dbPath, newCache)
 
 	return actual.(*CacheUnit[K, V]).GetDecodedForKey(key)
 }
 
 // GetFullPayload loads full payload list
-func (m *CacheManager[K, V]) GetFullPayload(dbPath string, indexPath string) ([]types.Payload[K, V], error) {
+func (m *CacheManager[K, V]) GetFullPayload(
+	dbPath string,
+	indexPath string,
+) ([]types.Payload[K, V], error) {
 
 	val, loaded := m.cache.Load(dbPath)
 	if loaded {
@@ -70,7 +84,12 @@ func (m *CacheManager[K, V]) GetFullPayload(dbPath string, indexPath string) ([]
 	}
 
 	// Create new cache and use LoadOrStore to avoid race
-	newCache := &CacheUnit[K, V]{onceDecodeAllValues: sync.Once{}, onceDecodeIndex: sync.Once{}, dbPayload: dbFileReader.GetPayload(), indexPayload: indexFileReader.GetPayload()}
+	newCache := &CacheUnit[K, V]{
+		onceDecodeAllValues: sync.Once{},
+		onceDecodeIndex:     sync.Once{},
+		dbPayload:           dbFileReader.GetPayload(),
+		indexPayload:        indexFileReader.GetPayload(),
+	}
 	actual, _ := m.cache.LoadOrStore(dbPath, newCache)
 
 	return actual.(*CacheUnit[K, V]).getDecodedForAll()
@@ -139,14 +158,20 @@ func (dc *CacheUnit[K, V]) GetDecodedForKey(key K) (types.Payload[K, V], error) 
 		} else {
 			if midK.Key == key {
 				if int(midK.Offset+midK.Size) > len(dc.dbPayload) {
-					return types.Payload[K, V]{}, fmt.Errorf("index out of bounds for key %v", key)
+					return types.Payload[K, V]{}, perrors.IndexOutOfBoundErr("key=%v", key)
 				}
 
 				valDecoder := gob.NewDecoder(bytes.NewReader(dc.dbPayload[midK.Offset : midK.Offset+midK.Size]))
 				var entry types.Payload[K, V]
 				if err := valDecoder.Decode(&entry); err != nil {
-					return types.Payload[K, V]{}, fmt.Errorf("failed to decode value for key %v: %w", key, err)
+					return types.Payload[K, V]{}, perrors.DecodeErr("key=%v, err=%v", key, err)
 				}
+
+				if entry.Val.IsDeleted() {
+					fmt.Println("deleted key ", key)
+					return entry, perrors.RaiseKeyDeletederr("key=%v", key)
+				}
+
 				return entry, nil
 			} else {
 				right = mid - 1
@@ -154,7 +179,7 @@ func (dc *CacheUnit[K, V]) GetDecodedForKey(key K) (types.Payload[K, V], error) 
 		}
 	}
 
-	return types.Payload[K, V]{}, fmt.Errorf("key %v not found", key)
+	return types.Payload[K, V]{}, perrors.RaiseKeyNotFoundErr("key=%v", key)
 }
 
 // getDecodedForAll to load all entries of SSTable for compaction
@@ -174,14 +199,15 @@ func (dc *CacheUnit[K, V]) getDecodedForAll() ([]types.Payload[K, V], error) {
 	for _, k := range dc.indexDecoded {
 		// Validate range
 		if int(k.Offset+k.Size) > len(dc.dbPayload) {
-			return nil, fmt.Errorf("index out of bounds for key %v", k.Key)
+			return nil, perrors.IndexOutOfBoundErr("key=%v", k.Key)
 		}
 
 		valDecoder := gob.NewDecoder(bytes.NewReader(dc.dbPayload[k.Offset : k.Offset+k.Size]))
 		var entry types.Payload[K, V]
 		if err := valDecoder.Decode(&entry); err != nil {
-			return nil, fmt.Errorf("failed to decode value for key %v: %w", k.Key, err)
+			return nil, perrors.DecodeErr("key=%v, err=%v", k.Key, err)
 		}
+
 		result = append(result, entry)
 	}
 

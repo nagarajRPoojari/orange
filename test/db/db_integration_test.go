@@ -77,7 +77,9 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 
 	wanted := map[string]interface{}(
 		map[string]interface{}{
-			"_ID": types.ID{K: int64(90102)}, "age": map[string]interface{}{"name": types.INT8(12)}, "name": types.STRING("hello"),
+			"_ID": types.ID{
+				K: int64(90102),
+			}, "age": map[string]interface{}{"name": types.INT8(12)}, "name": types.STRING("hello"),
 		},
 	)
 
@@ -185,14 +187,21 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 	log.Disable()
 
 	db := odb.NewOrangedb(odb.DBopts{Dir: t.TempDir()})
-	_, err := db.ProcessQuery(`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`)
+	_, err := db.ProcessQuery(
+		`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`,
+	)
 
 	assert.NoError(t, err)
 
 	for i := 1; i <= 100; i++ {
 		name := fmt.Sprintf("User%d", i)
 		age := i
-		query := fmt.Sprintf(`INSERT VALUE INTO users {"_ID": %d, "name": "%s", "age": {"value": %d} }`, i, name, age)
+		query := fmt.Sprintf(
+			`INSERT VALUE INTO users {"_ID": %d, "name": "%s", "age": {"value": %d} }`,
+			i,
+			name,
+			age,
+		)
 		_, err := db.ProcessQuery(query)
 		if err != nil {
 			log.Fatalf("Insert failed for ID %d: %v", i, err)
@@ -203,7 +212,9 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 
 	wanted := map[string]interface{}(
 		map[string]interface{}{
-			"_ID": types.ID{K: 89}, "age": map[string]interface{}{"value": types.INT64(89)}, "name": types.STRING("User89")},
+			"_ID": types.ID{
+				K: 89,
+			}, "age": map[string]interface{}{"value": types.INT64(89)}, "name": types.STRING("User89")},
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, wanted, got)

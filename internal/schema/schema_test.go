@@ -115,7 +115,9 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 			fields: field,
 			args: args{docName: "test-1",
 				schema: query.Schema(map[string]interface{}{
-					"_ID":  map[string]interface{}{"auto_increment": "int"}, // auto_increment should be bool
+					"_ID": map[string]interface{}{
+						"auto_increment": "int",
+					}, // auto_increment should be bool
 					"name": "FLOAT64",
 					"age":  map[string]interface{}{"name": "BYTE"},
 				}),
@@ -227,7 +229,11 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 				opts: tt.fields.opts,
 			}
 			if err := tr.VerifyAndCastData(tt.args.schema, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("SchemaHandler.VerifyAndCastData() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf(
+					"SchemaHandler.VerifyAndCastData() error = %v, wantErr %v",
+					err,
+					tt.wantErr,
+				)
 			}
 		})
 	}

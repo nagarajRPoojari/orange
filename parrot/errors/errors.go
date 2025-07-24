@@ -8,12 +8,60 @@ package errors
 
 import "fmt"
 
-const KeyNotFoundError = IO("Key not found")
-const FileNotFoundError = IO("File not found")
-const WALDisabledError = IO("WAL disabled")
+type KeyNotFoundErr string
 
-type IO string
+func (t KeyNotFoundErr) Error() string {
+	return fmt.Sprintf("key not found: %s", string(t))
+}
 
-func (t IO) Error() string {
+func RaiseKeyNotFoundErr(msg string, args ...any) KeyNotFoundErr {
+	return KeyNotFoundErr(fmt.Sprintf(msg, args...))
+}
+
+type KeyDeletederr string
+
+func (t KeyDeletederr) Error() string {
+	return fmt.Sprintf("key deleted: %s", string(t))
+}
+
+func RaiseKeyDeletederr(msg string, args ...any) KeyDeletederr {
+	return KeyDeletederr(fmt.Sprintf(msg, args...))
+}
+
+type IOErr string
+
+func (t IOErr) Error() string {
 	return fmt.Sprintf("io err: %s", string(t))
+}
+
+func FileNotFounderr(msg string, args ...any) IOErr {
+	return IOErr(fmt.Sprintf("file not found: "+msg, args...))
+}
+
+type WALErr string
+
+func (t WALErr) Error() string {
+	return fmt.Sprintf("WAL err: %s", string(t))
+}
+
+const WALDisablederr = WALErr("WAL disabled")
+
+type SerializationErr string
+
+func (t SerializationErr) Error() string {
+	return fmt.Sprintf("serialization err: %s", string(t))
+}
+
+func DecodeErr(msg string, args ...any) SerializationErr {
+	return SerializationErr(fmt.Sprintf("failed to decode: "+msg, args...))
+}
+
+type GeneralErr string
+
+func (t GeneralErr) Error() string {
+	return fmt.Sprintf("general err: %s", string(t))
+}
+
+func IndexOutOfBoundErr(msg string, args ...any) GeneralErr {
+	return GeneralErr(fmt.Sprintf("index out of bound: "+msg, args...))
 }

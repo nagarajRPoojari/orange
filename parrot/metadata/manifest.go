@@ -80,7 +80,7 @@ func (t *Manifest) Sync(ctx context.Context) error {
 
 			// load consistent manifest snapshot
 			// reason: json needs struct to export fields with no locks
-			//		   lsm is rw protected through locks, using lsm directly might lead to data race
+			// 		   lsm is rw protected through locks, using lsm directly might lead to data race
 			lsmView := t.LSM0.ToView()
 			log.Infof("Manifest LSM: %+v. %p\n", t.LSM0.levels, t.LSM0.levels)
 
@@ -101,7 +101,12 @@ func (t *Manifest) FormatDBPath(l, i int) string {
 		return ""
 	}
 
-	return path.Join(t.opts.Dir, t.LSM0.GetName(), fmt.Sprintf("level-%d", l), fmt.Sprintf("sst-%d.db", i))
+	return path.Join(
+		t.opts.Dir,
+		t.LSM0.GetName(),
+		fmt.Sprintf("level-%d", l),
+		fmt.Sprintf("sst-%d.db", i),
+	)
 }
 
 func (t *Manifest) FormatIndexPath(l, i int) string {
@@ -109,7 +114,12 @@ func (t *Manifest) FormatIndexPath(l, i int) string {
 		return ""
 	}
 
-	return path.Join(t.opts.Dir, t.LSM0.GetName(), fmt.Sprintf("level-%d", l), fmt.Sprintf("sst-%d.index", i))
+	return path.Join(
+		t.opts.Dir,
+		t.LSM0.GetName(),
+		fmt.Sprintf("level-%d", l),
+		fmt.Sprintf("sst-%d.index", i),
+	)
 }
 
 func (t *Manifest) FormatLevelPath(l int) string {

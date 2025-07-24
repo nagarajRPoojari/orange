@@ -19,11 +19,20 @@ type InternalValueType struct {
 	// to only gob registered data types to help unambiguous
 	// gob decoding
 	Payload map[string]interface{}
+	d       bool
 }
 
 // @todo: fix
 func (t InternalValueType) SizeOf() uintptr {
 	return 8
+}
+
+func (t InternalValueType) MarkDeleted() {
+	t.d = true
+}
+
+func (t InternalValueType) IsDeleted() bool {
+	return t.d
 }
 
 type DBopts struct {

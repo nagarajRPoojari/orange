@@ -21,12 +21,15 @@ import (
 	v2 "github.com/nagarajRPoojari/orange/parrot/cache/v2"
 	"github.com/nagarajRPoojari/orange/parrot/metadata"
 	"github.com/nagarajRPoojari/orange/parrot/types"
+
+	"github.com/nagarajRPoojari/orange/parrot/flags"
 )
 
 type MemtableOperation string
 
 const (
-	WriteOperation MemtableOperation = "WRITE"
+	WriteOperation  MemtableOperation = "WRITE"
+	DeleteOperation MemtableOperation = "DELETE"
 )
 
 type MemTableEvent[K types.Key, V types.Value] struct {
@@ -117,11 +120,35 @@ func (t *Memtable[K, V]) Write(key K, value V) bool {
 	return true
 }
 
-func (t *Memtable[K, V]) Read(key K) (V, bool) {
+func (t *Memtable[K, V]) Delete(key K, tombstone V) {
+	t.mu.Lock()
+	defer func() {
+		t.mu.Unlock()
+		// log the delete event to wal
+		if t.opts.TurnOnWal {
+			t.wal.Append(MemTableEvent[K, V]{Key: key, Op: DeleteOperation})
+		}
+	}()
+
+	if _, ok := t.data[key]; !ok {
+		t.data[key] = tombstone
+	}
+
+	t.data[key].MarkDeleted()
+}
+
+func (t *Memtable[K, V]) Read(key K) (V, flags.Flag) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	val, ok := t.data[key]
-	return val, ok
+	if !ok {
+		return val, flags.KeyNotFoundFlag
+	}
+	if val.IsDeleted() {
+		return val, flags.KeyDeletedFlag
+	}
+
+	return val, flags.KeyFoundFlag
 }
 
 type MemtableStore[K types.Key, V types.Value] struct {
@@ -145,7 +172,10 @@ type MemtableStore[K types.Key, V types.Value] struct {
 	opts MemtableOpts
 }
 
-func NewMemtableStore[K types.Key, V types.Value](mf *metadata.Manifest, opts MemtableOpts) *MemtableStore[K, V] {
+func NewMemtableStore[K types.Key, V types.Value](
+	mf *metadata.Manifest,
+	opts MemtableOpts,
+) *MemtableStore[K, V] {
 	q := NewQueue[K, V](QueueOpts{HardLimit: opts.QueueHardLimit})
 	mem := NewMemtable[K, V](opts)
 	node := NewNode(mem)
@@ -174,7 +204,7 @@ func NewMemtableStore[K types.Key, V types.Value](mf *metadata.Manifest, opts Me
 
 func (t *MemtableStore[K, V]) RollbackAll() error {
 	if !t.opts.TurnOnWal {
-		return errors.WALDisabledError
+		return errors.WALDisablederr
 	}
 
 	// List all WAL log files in the LogDir
@@ -258,11 +288,15 @@ func (t *MemtableStore[K, V]) Read(key K) (V, bool) {
 	// Search backwards in Queue
 
 	log.Infof("Started reading from memtables")
+	var null V
 
 	node := t.q.tail
 	for node != nil {
-		if v, ok := node.mem.Read(key); ok {
+		v, flag := node.mem.Read(key)
+		if flag == flags.KeyFoundFlag {
 			return v, true
+		} else if flag == flags.KeyDeletedFlag {
+			return null, false
 		}
 		node = node.Prev
 	}
@@ -274,14 +308,30 @@ func (t *MemtableStore[K, V]) Read(key K) (V, bool) {
 	cnt := 0
 
 	for level != nil {
-		for _, table := range level.GetTables() {
-			val, _ := t.DecoderCache.Get(table.DBPath, table.IndexPath, key)
-			// @todo: use min/max lookup to avoid full table search
-			// for _, k := range l {
-			// 	if k.Key == key {
-			// 		return k.Val, true
-			// 	}
-			// }
+		tbls := level.GetTables()
+		index := 0
+		sortedKeys := make([]int, len(tbls))
+		for k := range tbls {
+			sortedKeys[index] = k
+			index++
+		}
+
+		sort.Slice(sortedKeys, func(i, j int) bool {
+			return sortedKeys[i] > sortedKeys[j]
+		})
+
+		for _, mapKey := range sortedKeys {
+			table := tbls[mapKey]
+			val, err := t.DecoderCache.Get(table.DBPath, table.IndexPath, key)
+			if err != nil {
+				switch err.(type) {
+
+				case errors.KeyNotFoundErr:
+					continue
+				case errors.KeyDeletederr:
+					return val.Val, false
+				}
+			}
 
 			if val.Key == key {
 				return val.Val, true
@@ -296,4 +346,9 @@ func (t *MemtableStore[K, V]) Read(key K) (V, bool) {
 	}
 	var empty V
 	return empty, false
+}
+
+func (t *MemtableStore[K, V]) Delete(key K, tomstone V) error {
+	t.mem.Delete(key, tomstone)
+	return nil
 }

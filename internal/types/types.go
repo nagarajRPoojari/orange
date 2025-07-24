@@ -182,7 +182,6 @@ func toint64(v interface{}) (int64, error) {
 	case float64:
 		return int64(val), nil
 	default:
-		fmt.Println("toint64")
 		return 0, errors.TypeCastError("expected int64-compatible value, got %T", v)
 	}
 }
