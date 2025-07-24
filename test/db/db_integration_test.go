@@ -26,7 +26,6 @@ func TestOragedb_Init(t *testing.T) {
 	)
 
 	assert.NotNil(t, db)
-
 }
 
 func TestOrangedb_SelectDoc(t *testing.T) {
@@ -176,9 +175,8 @@ func TestOragedb_CreateCollection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr := odb.NewOrangedb(tt.fields.opts)
-			if err := tr.CreateCollection(tt.args.op); (err != nil) != tt.wantErr {
-				t.Errorf("Oragedb.CreateCollection() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			err := tr.CreateCollection(tt.args.op)
+			assert.Equal(t, tt.wantErr, err != nil, "Oragedb.CreateCollection() error = %v", err)
 		})
 	}
 }
@@ -190,7 +188,6 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 	_, err := db.ProcessQuery(
 		`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`,
 	)
-
 	assert.NoError(t, err)
 
 	for i := 1; i <= 100; i++ {
@@ -203,13 +200,10 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 			age,
 		)
 		_, err := db.ProcessQuery(query)
-		if err != nil {
-			log.Fatalf("Insert failed for ID %d: %v", i, err)
-		}
+		assert.NoError(t, err, "Insert failed for ID %d: %v", i, err)
 	}
 
 	got, err := db.ProcessQuery(`SELECT name, age FROM users WHERE _ID = 89`)
-
 	wanted := map[string]interface{}(
 		map[string]interface{}{
 			"_ID": types.ID{

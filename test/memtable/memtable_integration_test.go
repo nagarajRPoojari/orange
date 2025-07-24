@@ -16,6 +16,7 @@ import (
 	"github.com/nagarajRPoojari/orange/parrot/metadata"
 	"github.com/nagarajRPoojari/orange/parrot/types"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestMemtable_Write_And_Read_In_Mem verifies that a key-value pair
@@ -32,12 +33,11 @@ func TestMemtable_Write_And_Read_In_Mem(t *testing.T) {
 	k, v := types.StringKey{K: "key-0"}, types.StringValue{V: "val-0"}
 	mts.Write(k, &v)
 
-	log.Infof("Write successfull")
 	val, ok := mts.Read(k)
 
-	if !ok || *val != v {
-		t.Errorf("Expected %v, got %v", v, val)
-	}
+	assert.True(t, ok)
+	assert.Equal(t, v, *val)
+
 }
 
 // TestMemtable_Write_Overflow_Trigger_Flush ensures that writing enough
@@ -66,9 +66,8 @@ func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 	}
 
 	k, v := types.IntKey{K: 90892389}, types.IntValue{V: 1993920}
-	if ok := mts.Write(k, &v); !ok {
-		t.Errorf("Expected to trigger flush")
-	}
+	ok := mts.Write(k, &v)
+	assert.True(t, ok, "Expected to trigger flush")
 
 	// wait for memtable to flush & clear both memtable
 	time.Sleep(3 * time.Second)
@@ -78,9 +77,9 @@ func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 	val, ok := mts.Read(types.IntKey{K: 244})
 	v = types.IntValue{V: 244}
 
-	if !ok || *val != v {
-		t.Errorf("Expected %v, got %v", v, val)
-	}
+	assert.True(t, ok)
+	assert.Equal(t, v, *val)
+
 }
 
 // TestMemtable_Write_With_Multiple_Reader verifies concurrent read access
@@ -109,6 +108,10 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 		mf,
 		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
 	)
+
+	// Perform enough writes to trigger approximately 2 memtable flushes.
+	// Each flush occurs after reaching MEMTABLE_THRESHOLD bytes.
+	// totalOps is calculated based on the size of each entry and number of flushes.
 	d := types.IntValue{V: 0}
 	for i := range int(MEMTABLE_THRESHOLD / d.SizeOf()) {
 		mts.Write(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
@@ -123,6 +126,7 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 	time.Sleep(3 * time.Second)
 	wg := sync.WaitGroup{}
 
+	// clear in-memory memtables to read from disk
 	mts.Clear()
 
 	ticket := make(chan struct{}, MAX_CONCURRENT_READ_ROUTINES)
@@ -137,9 +141,8 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 
 			val, ok := mts.Read(types.IntKey{K: i})
 			v := types.IntValue{V: int32(i)}
-			if !ok || *val != v {
-				t.Errorf("Expected %v, got %v", v, val)
-			}
+			assert.True(t, ok)
+			assert.Equal(t, v, *val)
 		}(i)
 	}
 	wg.Wait()
@@ -151,8 +154,8 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 // Similar to TestMemtable_Write_With_Multiple_Reader but with more load.
 // Note:
 //
-//   - memtable/sst size is set to 1mb
-//   - max concurrent readers limited to 5000
+//   - memtable/sst size is set to 1kb
+//   - max concurrent readers limited to 500
 func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	log.Disable()
 
@@ -175,9 +178,11 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	)
 	d := types.IntValue{V: 0}
 
+	// Perform enough writes to trigger approximately 10 memtable flushes.
+	// Each flush occurs after reaching MEMTABLE_THRESHOLD bytes.
+	// totalOps is calculated based on the size of each entry and number of flushes.
 	multiples := 10
 	totalOps := int(MEMTABLE_THRESHOLD/d.SizeOf()) * multiples
-
 	for i := range totalOps {
 		mts.Write(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
@@ -200,15 +205,20 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 
 			val, ok := mts.Read(types.IntKey{K: i})
 			v := types.IntValue{V: int32(i)}
-			if !ok || *val != v {
-				t.Errorf("Expected %v, got %v", v, val)
-			}
+			assert.True(t, ok)
+			assert.Equal(t, v, *val)
 		}(i)
 	}
 
 	wg.Wait()
 }
 
+// TestMemtable_Rollback verifies memtable crash recovery
+// WAL is enabled to log memtable writes
+// Note:
+//
+//   - memtable/sst size is set to 1kb
+//   - max concurrent readers limited to 500
 func TestMemtable_Rollback(t *testing.T) {
 	log.Disable()
 
@@ -233,22 +243,22 @@ func TestMemtable_Rollback(t *testing.T) {
 		},
 	)
 
-	// this shouldn't trigger memtable overflow
+	// Perform relatively fewer write operations to ensure both write/delete ops won't
+	// trigger flusher
 	totalOps := 100
 	for i := range totalOps {
 		mts.Write(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
 
-	wg := sync.WaitGroup{}
-
-	ticket := make(chan struct{}, MAX_CONCURRENT_READ_ROUTINES)
-
-	// clear all data
+	// clear in-memory memtable
 	mts.Clear()
+
+	wg := sync.WaitGroup{}
+	ticket := make(chan struct{}, MAX_CONCURRENT_READ_ROUTINES)
 
 	time.Sleep(2 * time.Second)
 
-	// rollback: expected to bring back all vanished data
+	// rollback should replay write logs
 	mts.RollbackAll()
 
 	for i := range totalOps {
@@ -262,9 +272,8 @@ func TestMemtable_Rollback(t *testing.T) {
 
 			val, ok := mts.Read(types.IntKey{K: i})
 			v := types.IntValue{V: int32(i)}
-			if !ok || *val != v {
-				t.Errorf("Expected %v, got %v", v, val)
-			}
+			assert.True(t, ok)
+			assert.Equal(t, v, *val)
 		}(i)
 	}
 
@@ -309,7 +318,6 @@ func TestMemtable_Delete_In_Memory(t *testing.T) {
 	}
 
 	wg := sync.WaitGroup{}
-
 	ticket := make(chan struct{}, MAX_CONCURRENT_READ_ROUTINES)
 
 	time.Sleep(2 * time.Second)
@@ -328,13 +336,10 @@ func TestMemtable_Delete_In_Memory(t *testing.T) {
 
 			// expected to be deleted
 			if i >= delStart && i <= delEnd {
-				if ok {
-					t.Errorf("Expected to be deleted, found=%v", val)
-				}
+				assert.False(t, ok, "Expected to be deleted, found=%v", val)
 			} else {
-				if !ok || *val != v {
-					t.Errorf("Expected %v, got %v", v, val)
-				}
+				assert.True(t, ok)
+				assert.Equal(t, v, *val)
 			}
 		}(i)
 	}
@@ -354,10 +359,8 @@ func TestMemtable_Delete_On_Disk(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-
 	go mf.Sync(ctx)
 
-	// overflow first memtable to trigger flush
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
@@ -409,17 +412,14 @@ func TestMemtable_Delete_On_Disk(t *testing.T) {
 
 			val, ok := mts.Read(types.IntKey{K: i})
 			v := types.IntValue{V: int32(i)}
+			// expected to be deleted
 			if i >= delStart && i <= delEnd {
-				// These keys should have been deleted.
-				if ok {
-					t.Errorf("Expected to be deleted, found=%v", val)
-				}
+				assert.False(t, ok, "Expected to be deleted, found=%v", val)
 			} else {
-				// These keys should exist and match the expected value.
-				if !ok || *val != v {
-					t.Errorf("Expected %v, got %v", v, val)
-				}
+				assert.True(t, ok)
+				assert.Equal(t, v, *val)
 			}
+
 		}(i)
 	}
 
