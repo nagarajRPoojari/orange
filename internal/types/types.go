@@ -16,6 +16,10 @@ import (
 )
 
 func init() {
+
+	// ID
+	gob.Register(ID{K: 0})
+
 	// Common map/slice types
 	gob.Register(map[string]interface{}{})
 	gob.Register([]interface{}{})

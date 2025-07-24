@@ -136,6 +136,8 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 			return fmt.Errorf("unexpected type for id: %T %v", id, id)
 		}
 
+		op.Value["_ID"] = castedId
+
 		res := db.Put(castedId, InternalValueType{Payload: op.Value})
 		return res.Err
 	}
@@ -159,7 +161,7 @@ func (t *Oragedb) GetDoc(op query.SelectOp) (map[string]interface{}, error) {
 
 	db, ok := val.(*storage.Storage[types.ID, InternalValueType])
 	if !ok {
-		return nil, errors.InsertError("failed to get db for " + op.Document)
+		return nil, errors.SelectError("failed to get db for " + op.Document)
 	}
 
 	castedId := types.ID{K: op.ID}

@@ -137,7 +137,29 @@ func (t *SchemaHandler) LoadFromCatalog(docName string) (query.Schema, error) {
 }
 
 func (t *SchemaHandler) VerifyAndCastData(schema, data map[string]interface{}) error {
-	return recursiveDataCaster(schema, data)
+	err := recursiveDataCaster(schema, data)
+	if err != nil {
+		return err
+	}
+
+	missing := make([]string, 0)
+	// for now: user must provide id
+	if _, ok := data["_ID"]; !ok {
+		missing = append(missing, "_ID")
+	}
+
+	for key := range schema {
+		if _, ok := data[key]; !ok {
+			missing = append(missing, key)
+		}
+	}
+
+	if len(missing) > 0 {
+		return errors.MissingFields("%v", missing)
+	}
+
+	return nil
+
 }
 
 func recursiveDataCaster(schema, data map[string]interface{}) error {
@@ -180,23 +202,5 @@ func recursiveDataCaster(schema, data map[string]interface{}) error {
 			return recursiveDataCaster(sMap, vMap)
 		}
 	}
-
-	missing := make([]string, 0)
-
-	// for now: user must provide id
-	if _, ok := data["_ID"]; !ok {
-		missing = append(missing, "_ID")
-	}
-
-	for key := range schema {
-		if _, ok := data[key]; !ok {
-			missing = append(missing, key)
-		}
-	}
-
-	if len(missing) > 0 {
-		return errors.MissingFields("%v", missing)
-	}
-
 	return nil
 }

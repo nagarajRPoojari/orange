@@ -178,6 +178,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 					"name":  "INT",
 				}),
 				data: map[string]interface{}{
+					"_ID":   0,
 					"young": "16282929292.19191.1092",
 					"old":   "false",
 					"name":  819282,
@@ -195,6 +196,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 					"name":  "INT",
 				}),
 				data: map[string]interface{}{
+					"_ID":   0,
 					"young": "16282929292.192",
 					"old":   "false",
 					"name":  819282,
@@ -211,6 +213,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 					"old":   "BOOL",
 				}),
 				data: map[string]interface{}{
+					"_ID":   0,
 					"young": "false",
 					"old":   "false",
 				},
