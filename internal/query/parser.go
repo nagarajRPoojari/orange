@@ -18,6 +18,8 @@ func NewParser(input string) *Parser {
 	return &Parser{input}
 }
 
+// Build parses query and builds respective QueryOp
+//   - supports INSERT, CREATE, SELECT queries
 func (t *Parser) Build() (Query, error) {
 	return t.parse()
 
@@ -52,10 +54,14 @@ func extractOutermost(input string, startChar, endChar rune) (string, error) {
 	return "", errors.SQLSyntaxError("failed to extract fields")
 }
 
-//	CREATE DOCUMENT user {
-//	 name: "hello",
-//		game: "hello"
-//	}
+// ParseCreateQuery parses a CREATE DOCUMENT query and returns a CreateOp.
+//
+// Expected format:
+//
+//	CREATE DOCUMENT <name> { "field1": "type1", "field2": "type2", ... }
+//
+// It extracts the document name and schema definition, returning them
+// as a structured CreateOp. Returns an error if parsing fails.
 func (t *Parser) ParseCreateQuery() (CreateOp, error) {
 	doc, err := extractOutermost(t.input, '{', '}')
 	if err != nil {
@@ -98,9 +104,18 @@ func unmarshallSchema(input JSONString) (Schema, error) {
 	return schema, nil
 }
 
-// INSERT VALUE INTO user {
+// ParseInsertQuery parses an INSERT VALUE query and returns an InsertOp.
 //
-// }
+// Expected format:
+//
+//	INSERT VALUE INTO <document> {
+//	  "field1": <value1>,
+//	  "field2": <value2>,
+//	  ...
+//	}
+//
+// It extracts the target document name and the JSON payload to insert.
+// Returns an error if parsing or unmarshalling fails.
 func (t *Parser) ParseInsertQuery() (InsertOp, error) {
 	doc, err := extractOutermost(t.input, '{', '}')
 	if err != nil {
@@ -143,7 +158,14 @@ func unmarshallValue(input JSONString) (Value, error) {
 	return schema, nil
 }
 
-// SELECT name, age FROM user WITH _ID="some_key"
+// ParseSelectQuery parses a SELECT query and returns a SelectOp.
+//
+// Expected format:
+//
+//	SELECT <columns> FROM <document> WITH _ID=<key>
+//
+// Extracts the document name, selected columns, and required _ID filter.
+// Returns an error if parsing fails or if _ID is missing.
 func (t *Parser) ParseSelectQuery() (SelectOp, error) {
 	name, err := extractDocumentNameFromSelectQuery(t.input)
 	if err != nil {
