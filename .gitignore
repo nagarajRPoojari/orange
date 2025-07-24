@@ -15,6 +15,7 @@
 
 # Ignore directories containing binaries generated and other stuff
 tmp/**
+temp
 bin/**
 coverage/**
 
