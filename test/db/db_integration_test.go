@@ -3,6 +3,7 @@ package db_test
 import (
 	"fmt"
 	"path"
+	"reflect"
 	"testing"
 
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
@@ -273,10 +274,9 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 			}, "age": map[string]interface{}{"value": types.INT64(89)}, "name": types.STRING("User89")},
 	)
 	assert.True(t,
-		assert.ObjectsAreEqual(got, wantedA) || assert.ObjectsAreEqual(got, wantedB),
+		reflect.DeepEqual(got, wantedA) || reflect.DeepEqual(got, wantedB),
 		"Expected result to match either wantedA or wantedB, but got: %v", got,
 	)
-
 	got, err = db.ProcessQuery(`DELETE DOCUMENT FROM users WHERE _ID = 89`)
 	assert.NoError(t, err)
 
