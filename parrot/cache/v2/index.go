@@ -19,6 +19,8 @@ import (
 	"github.com/nagarajRPoojari/orange/parrot/utils"
 )
 
+// CacheManager caches SSTables, acts as only entrypoint
+// to access SSTables
 type CacheManager[K types.Key, V types.Value] struct {
 	// using sync.Map to prevent race
 	cache sync.Map
@@ -30,6 +32,7 @@ func NewCacheManager[K types.Key, V types.Value]() *CacheManager[K, V] {
 	}
 }
 
+// Get loads value for single key
 func (m *CacheManager[K, V]) Get(dbPath string, indexPath string, key K) (types.Payload[K, V], error) {
 	val, loaded := m.cache.Load(dbPath)
 	if loaded {
@@ -51,6 +54,7 @@ func (m *CacheManager[K, V]) Get(dbPath string, indexPath string, key K) (types.
 	return actual.(*CacheUnit[K, V]).GetDecodedForKey(key)
 }
 
+// GetFullPayload loads full payload list
 func (m *CacheManager[K, V]) GetFullPayload(dbPath string, indexPath string) ([]types.Payload[K, V], error) {
 
 	val, loaded := m.cache.Load(dbPath)
@@ -73,6 +77,7 @@ func (m *CacheManager[K, V]) GetFullPayload(dbPath string, indexPath string) ([]
 
 }
 
+// CacheUnit holds data(index, data) related to single SSTable
 type CacheUnit[K types.Key, V types.Value] struct {
 	// dbpayload directly maps to data file mmap page (shared with multiple readers)
 	dbPayload []byte
@@ -89,6 +94,8 @@ type CacheUnit[K types.Key, V types.Value] struct {
 	err          error
 }
 
+// loadIndex loads .index file and caches
+//   - will be executed only once per cache unit
 func (dc *CacheUnit[K, V]) loadIndex() {
 	dc.onceDecodeIndex.Do(func() {
 		var result []utils.IndexPayload[K, V]
@@ -111,6 +118,9 @@ func (dc *CacheUnit[K, V]) loadIndex() {
 	})
 }
 
+// GetDecodedForKey loads value for specific key
+//   - @todo: caches loaded valu
+//   - does binary search on index file to search for corresponding value offset
 func (dc *CacheUnit[K, V]) GetDecodedForKey(key K) (types.Payload[K, V], error) {
 	dc.loadIndex()
 
@@ -146,6 +156,10 @@ func (dc *CacheUnit[K, V]) GetDecodedForKey(key K) (types.Payload[K, V], error) 
 	return types.Payload[K, V]{}, fmt.Errorf("key %v not found", key)
 }
 
+// getDecodedForAll to load all entries of SSTable for compaction
+//
+//   - need not to be cached as, no reads are assumed to happen after compaction
+//   - @todo: implicitly evict cache unit
 func (dc *CacheUnit[K, V]) getDecodedForAll() ([]types.Payload[K, V], error) {
 	dc.loadIndex()
 
