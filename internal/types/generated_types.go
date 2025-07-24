@@ -4,7 +4,6 @@ package types
 import "github.com/nagarajRPoojari/orange/internal/errors"
 
 var AllTypes = map[string]struct{}{
-	"ID": {},
 	"INT": {},
 	"INT64": {},
 	"INT32": {},
@@ -19,15 +18,10 @@ var AllTypes = map[string]struct{}{
 	"TIME": {},
 	"DATETIME": {},
 	"TIMESTAMP": {},
-	"DECIMAL": {},
-	"NUMERIC": {},
-	"UUID": {},
-	"BLOB": {},
+	"ID": {},
 }
 func TypeCast(castTo string, val interface{}) (interface{}, error) { 
 switch castTo { 
- 	 case "ID": 
-	 	 return ToID(val) 
  	 case "INT": 
 	 	 return ToINT(val) 
  	 case "INT64": 
@@ -56,14 +50,8 @@ switch castTo {
 	 	 return ToDATETIME(val) 
  	 case "TIMESTAMP": 
 	 	 return ToTIMESTAMP(val) 
- 	 case "DECIMAL": 
-	 	 return ToDECIMAL(val) 
- 	 case "NUMERIC": 
-	 	 return ToNUMERIC(val) 
- 	 case "UUID": 
-	 	 return ToUUID(val) 
- 	 case "BLOB": 
-	 	 return ToBLOB(val) 
+ 	 case "ID": 
+	 	 return ToID(val) 
 	}
 return nil, errors.TypeCastError("type not found")
 }

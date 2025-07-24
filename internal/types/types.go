@@ -4,12 +4,50 @@ package types
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"time"
 
+	"encoding/gob"
+
 	"github.com/nagarajRPoojari/orange/internal/errors"
 )
+
+func init() {
+	// Common map/slice types
+	gob.Register(map[string]interface{}{})
+	gob.Register([]interface{}{})
+
+	// Basic scalar types
+	gob.Register("")         // string
+	gob.Register(0)          // int
+	gob.Register(float64(0)) // float64
+	gob.Register(true)       // bool
+
+	// Time-related types
+	gob.Register(time.Time{})
+
+	gob.Register(INT(0))
+	gob.Register(INT64(0))
+	gob.Register(INT32(0))
+	gob.Register(INT16(0))
+	gob.Register(INT8(0))
+
+	// Float types
+	gob.Register(FLOAT(0))
+	gob.Register(FLOAT32(0))
+	gob.Register(FLOAT64(0))
+
+	// Bool and string
+	gob.Register(BOOL(false))
+	gob.Register(STRING(""))
+
+	// Date & time-related
+	gob.Register(DATE{})
+	gob.Register(TIME{})
+	gob.Register(DATETIME{})
+	gob.Register(TIMESTAMP{})
+
+}
 
 // basic types
 
@@ -40,14 +78,14 @@ type DATETIME datetimeValue
 type TIMESTAMP timestampValue
 
 // decimal / numeric
-type DECIMAL decimalValue
-type NUMERIC numericValue
+// type DECIMAL decimalValue
+// type NUMERIC numericValue
 
-// uuid
-type UUID uuidValue
+// // uuid
+// type UUID uuidValue
 
-// blob
-type BLOB blobValue
+// // blob
+// type BLOB blobValue
 
 type ID struct {
 	K int64
@@ -62,164 +100,65 @@ func (t ID) Less(other any) bool {
 }
 
 // int64
-type int64Value struct {
-	V int64
-}
-
-func (t int64Value) SizeOf() uintptr {
-	return 8
-}
-
-func NewINT64(v interface{}) (int64Value, error) {
-	var null int64Value
-	switch val := v.(type) {
-	case int64:
-		return int64Value{V: val}, nil
-	case int:
-		return int64Value{V: int64(val)}, nil
-	case float64:
-		return int64Value{V: int64(val)}, nil
-	default:
-		return null, errors.TypeCastError(fmt.Sprintf("type cast failed for %v", v))
-	}
-}
+type int64Value int64
 
 // int32
-type int32Value struct {
-	V int32
-}
-
-func (t int32Value) SizeOf() uintptr {
-	return 4
-}
+type int32Value int32
 
 // int16
-type int16Value struct {
-	V int16
-}
-
-func (t int16Value) SizeOf() uintptr {
-	return 2
-}
+type int16Value int16
 
 // int8
-type int8Value struct {
-	V int8
-}
-
-func (t int8Value) SizeOf() uintptr {
-	return 1
-}
+type int8Value int8
 
 // float64
-type float64Value struct {
-	V float64
-}
-
-func (t float64Value) SizeOf() uintptr {
-	return 8
-}
+type float64Value float64
 
 // float32
-type float32Value struct {
-	V float32
-}
-
-func (t float32Value) SizeOf() uintptr {
-	return 8
-}
+type float32Value float32
 
 // bool
-type boolValue struct {
-	V bool
-}
+type boolValue bool
 
-func (t boolValue) SizeOf() uintptr {
-	return 8
-}
-
-type stringValue struct {
-	V string
-}
-
-func (t stringValue) SizeOf() uintptr {
-	return uintptr(len(t.V))
-}
+type stringValue string
 
 // byte
-type byteValue struct {
-	V byte
-}
+type byteValue byte
 
-func (t byteValue) SizeOf() uintptr {
-	return 1
-}
+type dateValue time.Time // usually stored as YYYY-MM-DD
 
-type dateValue struct {
-	V time.Time // usually stored as YYYY-MM-DD
-}
+type timeValue time.Time // usually stored as HH:MM:SS
 
-func (t dateValue) SizeOf() uintptr {
-	return 4 // approximate size for a date-only (year, month, day)
-}
+type datetimeValue time.Time
 
-type timeValue struct {
-	V time.Time // usually stored as HH:MM:SS
-}
+type timestampValue time.Time
 
-func (t timeValue) SizeOf() uintptr {
-	return 3 // approximate size (hour, min, sec)
-}
+// type decimalValue string // to store arbitrary precision decimal as string
 
-type datetimeValue struct {
-	V time.Time
-}
+// type numericValue string
 
-func (t datetimeValue) SizeOf() uintptr {
-	return 8 // standard size (date + time), depending on DB
-}
+// type uuidValue [16]byte // UUID is 128 bits
 
-type timestampValue struct {
-	V time.Time
-}
+// type blobValue []byte
 
-func (t timestampValue) SizeOf() uintptr {
-	return 8 // similar to datetime
-}
-
-type decimalValue struct {
-	V string // to store arbitrary precision decimal as string
-}
-
-func (t decimalValue) SizeOf() uintptr {
-	return uintptr(len(t.V)) // depends on precision
-}
-
-type numericValue struct {
-	V string
-}
-
-func (t numericValue) SizeOf() uintptr {
-	return uintptr(len(t.V))
-}
-
-type uuidValue struct {
-	V [16]byte // UUID is 128 bits
-}
-
-func (t uuidValue) SizeOf() uintptr {
-	return 16
-}
-
-type blobValue struct {
-	V []byte
-}
-
-func (t blobValue) SizeOf() uintptr {
-	return uintptr(len(t.V))
+func toid(v interface{}) (int64, error) {
+	switch val := v.(type) {
+	case int64:
+		return val, nil
+	case int:
+		return int64(val), nil
+	case float64:
+		return int64(val), nil
+	default:
+		return 0, errors.TypeCastError(fmt.Sprintf("expected int64-compatible value, got %T", v))
+	}
 }
 
 func ToID(v interface{}) (int64, error) {
+	return toid(v)
+}
+
+func toint64(v interface{}) (int64, error) {
 	switch val := v.(type) {
 	case int64:
 		return val, nil
@@ -232,20 +171,47 @@ func ToID(v interface{}) (int64, error) {
 	}
 }
 
-func toInt64(v interface{}) (int64, error) {
+func toint(v interface{}) (int, error) {
 	switch val := v.(type) {
-	case int64:
-		return val, nil
 	case int:
-		return int64(val), nil
+		return int(val), nil
 	case float64:
-		return int64(val), nil
+		return int(val), nil
 	default:
-		return 0, errors.TypeCastError(fmt.Sprintf("expected int64-compatible value, got %T", v))
+		return 0, errors.TypeCastError(fmt.Sprintf("expected int-compatible value, got %T", v))
 	}
 }
 
-func toInt32(v interface{}) (int32, error) {
+func todate(v interface{}) (time.Time, error) {
+	switch val := v.(type) {
+	case time.Time:
+		return val, nil
+	case string:
+		// Try common layouts
+		layouts := []string{
+			time.RFC3339,
+			"2006-01-02",
+			"2006-01-02 15:04:05",
+		}
+		for _, layout := range layouts {
+			if t, err := time.Parse(layout, val); err == nil {
+				return t, nil
+			}
+		}
+		return time.Time{}, fmt.Errorf("unable to parse string to time: %q", val)
+	case float64:
+		// Assume it's a Unix timestamp in seconds
+		return time.Unix(int64(val), 0), nil
+	case int64:
+		return time.Unix(val, 0), nil
+	case int:
+		return time.Unix(int64(val), 0), nil
+	default:
+		return time.Time{}, fmt.Errorf("expected time-compatible value, got %T", v)
+	}
+}
+
+func toint32(v interface{}) (int32, error) {
 	switch val := v.(type) {
 	case int32:
 		return val, nil
@@ -258,7 +224,7 @@ func toInt32(v interface{}) (int32, error) {
 	}
 }
 
-func toInt16(v interface{}) (int16, error) {
+func toint16(v interface{}) (int16, error) {
 	switch val := v.(type) {
 	case int16:
 		return val, nil
@@ -277,7 +243,7 @@ func toInt16(v interface{}) (int16, error) {
 	}
 }
 
-func toInt8(v interface{}) (int8, error) {
+func toint8(v interface{}) (int8, error) {
 	switch val := v.(type) {
 	case int8:
 		return val, nil
@@ -296,7 +262,19 @@ func toInt8(v interface{}) (int8, error) {
 	}
 }
 
-func toFloat64(v interface{}) (float64, error) {
+func tofloat64(v interface{}) (float64, error) {
+	switch val := v.(type) {
+	case float64:
+		return val, nil
+	case float32:
+		return float64(val), nil
+	case int:
+		return float64(val), nil
+	default:
+		return 0, errors.TypeCastError(fmt.Sprintf("expected float64-compatible value, got %T", v))
+	}
+}
+func tofloat(v interface{}) (float64, error) {
 	switch val := v.(type) {
 	case float64:
 		return val, nil
@@ -309,7 +287,7 @@ func toFloat64(v interface{}) (float64, error) {
 	}
 }
 
-func toFloat32(v interface{}) (float32, error) {
+func tofloat32(v interface{}) (float32, error) {
 	switch val := v.(type) {
 	case float32:
 		return float32(val), nil
@@ -320,7 +298,7 @@ func toFloat32(v interface{}) (float32, error) {
 	}
 }
 
-func toBool(v interface{}) (bool, error) {
+func tobool(v interface{}) (bool, error) {
 	switch val := v.(type) {
 	case bool:
 		return val, nil
@@ -334,7 +312,7 @@ func toBool(v interface{}) (bool, error) {
 	return false, errors.TypeCastError(fmt.Sprintf("expected bool-compatible value, got %T", v))
 }
 
-func toString(v interface{}) (string, error) {
+func tostring(v interface{}) (string, error) {
 	switch val := v.(type) {
 	case string:
 		return val, nil
@@ -349,7 +327,7 @@ func toString(v interface{}) (string, error) {
 	}
 }
 
-func toTime(v interface{}) (time.Time, error) {
+func totime(v interface{}) (time.Time, error) {
 	switch val := v.(type) {
 	case time.Time:
 		return val, nil
@@ -371,167 +349,170 @@ func toTime(v interface{}) (time.Time, error) {
 	}
 }
 
+func todatetime(v interface{}) (time.Time, error) {
+	switch val := v.(type) {
+	case time.Time:
+		return val, nil
+	case string:
+		// Try common date-time layouts
+		layouts := []string{
+			time.RFC3339,
+			"2006-01-02 15:04:05",
+			"2006-01-02T15:04:05",
+			"2006-01-02",
+		}
+		for _, layout := range layouts {
+			if t, err := time.Parse(layout, val); err == nil {
+				return t, nil
+			}
+		}
+		return time.Time{}, fmt.Errorf("unable to parse string to datetime: %q", val)
+	case float64:
+		return time.Unix(int64(val), 0), nil
+	case int64:
+		return time.Unix(val, 0), nil
+	case int:
+		return time.Unix(int64(val), 0), nil
+	default:
+		return time.Time{}, fmt.Errorf("expected datetime-compatible value, got %T", v)
+	}
+}
+
+// totimestamp converts supported input to a Unix timestamp in seconds.
+func totimestamp(v interface{}) (int64, error) {
+	switch val := v.(type) {
+	case time.Time:
+		return val.Unix(), nil
+	case string:
+		t, err := todatetime(val)
+		if err != nil {
+			return 0, fmt.Errorf("cannot convert string to timestamp: %w", err)
+		}
+		return t.Unix(), nil
+	case float64:
+		return int64(val), nil
+	case int64:
+		return val, nil
+	case int:
+		return int64(val), nil
+	default:
+		return 0, fmt.Errorf("expected timestamp-compatible value, got %T", v)
+	}
+}
+
 // int types
 func ToINT(v interface{}) (INT, error) {
-	i, err := toInt64(v)
+	i, err := toint64(v)
 	if err != nil {
-		return INT{}, err
+		return INT(0), err
 	}
-	return INT(int64Value{V: i}), nil
+	return INT(i), nil
 }
 
 func ToINT64(v interface{}) (INT64, error) {
-	i, err := toInt64(v)
+	i, err := toint64(v)
 	if err != nil {
-		return INT64{}, err
+		return INT64(0), err
 	}
-	return INT64(int64Value{V: i}), nil
+	return INT64(i), nil
 }
 
 func ToINT32(v interface{}) (INT32, error) {
-	i, err := toInt32(v)
+	i, err := toint32(v)
 	if err != nil {
-		return INT32{}, err
+		return INT32(0), err
 	}
-	return INT32(int32Value{V: i}), nil
+	return INT32(i), nil
 }
 
 func ToINT16(v interface{}) (INT16, error) {
-	i, err := toInt16(v)
+	i, err := toint16(v)
 	if err != nil {
-		return INT16{}, err
+		return INT16(0), err
 	}
-	return INT16(int16Value{V: i}), nil
+	return INT16(i), nil
 }
 
 func ToINT8(v interface{}) (INT8, error) {
-	i, err := toInt8(v)
+	i, err := toint8(v)
 	if err != nil {
-		return INT8{}, err
+		return INT8(0), err
 	}
-	return INT8(int8Value{V: i}), nil
+	return INT8(i), nil
 }
 
 // float types
 func ToFLOAT(v interface{}) (FLOAT, error) {
-	i, err := toInt64(v)
+	i, err := toint64(v)
 	if err != nil {
-		return FLOAT{}, err
+		return FLOAT(0), err
 	}
-	return FLOAT(int64Value{V: i}), nil
+	return FLOAT(i), nil
 }
 
 func ToFLOAT32(v interface{}) (FLOAT32, error) {
-	f, err := toFloat32(v)
+	f, err := tofloat32(v)
 	if err != nil {
-		return FLOAT32{}, err
+		return FLOAT32(0), err
 	}
-	return FLOAT32(float32Value{V: f}), nil
+	return FLOAT32(f), nil
 }
 
 func ToFLOAT64(v interface{}) (FLOAT64, error) {
-	f, err := toFloat64(v)
+	f, err := tofloat64(v)
 	if err != nil {
-		return FLOAT64{}, err
+		return FLOAT64(0), err
 	}
-	return FLOAT64(float64Value{V: f}), nil
+	return FLOAT64(f), nil
 }
 
 // bool
 func ToBOOL(v interface{}) (BOOL, error) {
-	b, err := toBool(v)
+	b, err := tobool(v)
 	if err != nil {
-		return BOOL{}, err
+		return BOOL(false), err
 	}
-	return BOOL(boolValue{V: b}), nil
+	return BOOL(b), nil
 }
 
 // string
 func ToSTRING(v interface{}) (STRING, error) {
-	s, err := toString(v)
+	s, err := tostring(v)
 	if err != nil {
-		return STRING{}, err
+		return STRING(""), err
 	}
-	return STRING(stringValue{V: s}), nil
+	return STRING(s), nil
 }
 
 // date/time types
 func ToDATE(v interface{}) (DATE, error) {
-	t, err := toTime(v)
+	t, err := totime(v)
 	if err != nil {
 		return DATE{}, err
 	}
-	return DATE(dateValue{V: t}), nil
+	return DATE(t), nil
 }
 
 func ToTIME(v interface{}) (TIME, error) {
-	t, err := toTime(v)
+	t, err := totime(v)
 	if err != nil {
 		return TIME{}, err
 	}
-	return TIME(timeValue{V: t}), nil
+	return TIME(t), nil
 }
 
 func ToDATETIME(v interface{}) (DATETIME, error) {
-	t, err := toTime(v)
+	t, err := totime(v)
 	if err != nil {
 		return DATETIME{}, err
 	}
-	return DATETIME(datetimeValue{V: t}), nil
+	return DATETIME(t), nil
 }
 
 func ToTIMESTAMP(v interface{}) (TIMESTAMP, error) {
-	t, err := toTime(v)
+	t, err := totime(v)
 	if err != nil {
 		return TIMESTAMP{}, err
 	}
-	return TIMESTAMP(timestampValue{V: t}), nil
-}
-
-// decimal/numeric
-func ToDECIMAL(v interface{}) (DECIMAL, error) {
-	var validDecimal = regexp.MustCompile(`^-?\d+(\.\d+)?$`)
-	s, err := toString(v)
-	if err != nil {
-		return DECIMAL{}, err
-	}
-
-	if !validDecimal.MatchString(s) {
-		return DECIMAL{}, fmt.Errorf("invalid decimal format: %q", s)
-	}
-
-	return DECIMAL(decimalValue{V: s}), nil
-}
-
-func ToNUMERIC(v interface{}) (NUMERIC, error) {
-	s, err := toString(v)
-	if err != nil {
-		return NUMERIC{}, err
-	}
-	return NUMERIC(numericValue{V: s}), nil
-}
-
-// UUID
-func ToUUID(v interface{}) (UUID, error) {
-	switch val := v.(type) {
-	case [16]byte:
-		return UUID(uuidValue{V: val}), nil
-	case string:
-		// You can parse string UUID here if needed
-		return UUID{}, errors.TypeCastError("UUID parsing from string not implemented")
-	default:
-		return UUID{}, errors.TypeCastError(fmt.Sprintf("expected UUID-compatible value, got %T", v))
-	}
-}
-
-// BLOB
-func ToBLOB(v interface{}) (BLOB, error) {
-	switch val := v.(type) {
-	case []byte:
-		return BLOB(blobValue{V: val}), nil
-	case string:
-		return BLOB(blobValue{V: []byte(val)}), nil
-	default:
-		return BLOB{}, errors.TypeCastError(fmt.Sprintf("expected []byte-compatible value, got %T", v))
-	}
+	return TIMESTAMP(t), nil
 }

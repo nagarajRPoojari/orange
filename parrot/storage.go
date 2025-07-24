@@ -8,6 +8,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 
 	v2 "github.com/nagarajRPoojari/orange/parrot/cache/v2"
 	"github.com/nagarajRPoojari/orange/parrot/compactor"
@@ -87,6 +88,7 @@ func (t *Storage[K, V]) createOrLoadCollection() {
 			QueueHardLimit:    t.opts.QueueHardLimit,
 			QueueSoftLimit:    t.opts.QueueSoftLimit,
 			LogDir:            t.opts.WalLogDir,
+			TurnOnWal:         t.opts.TurnOnWal,
 		})
 	t.store = mt
 	t.manifest = mf
@@ -97,6 +99,7 @@ func (t *Storage[K, V]) Get(key K) ReadStatus[V] {
 }
 
 func (t *Storage[K, V]) Put(key K, value V) WriteStatus {
+	fmt.Println("got put request")
 	return t.writer.Put(key, value)
 }
 

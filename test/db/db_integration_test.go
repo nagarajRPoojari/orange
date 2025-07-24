@@ -73,7 +73,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 
 	wanted := map[string]interface{}(
 		map[string]interface{}{
-			"_ID": int64(90102), "age": map[string]interface{}{"name": types.INT8{V: 12}}, "name": types.STRING{V: "hello"},
+			"_ID": int64(90102), "age": map[string]interface{}{"name": types.INT8(12)}, "name": types.STRING("hello"),
 		},
 	)
 
@@ -199,8 +199,8 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 
 	wanted := map[string]interface{}(
 		map[string]interface{}{
-			"_ID": int64(89), "age": map[string]interface{}{"value": types.INT64{V: 89}}, "name": types.STRING{V: "User89"},
-		})
+			"_ID": int64(89), "age": map[string]interface{}{"value": types.INT64(89)}, "name": types.STRING("User89")},
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, wanted, got)
 }
