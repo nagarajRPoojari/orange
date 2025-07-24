@@ -12,7 +12,7 @@
 [![License](https://img.shields.io/github/license/nagarajRPoojari/orange?color=red&style=for-the-badge&logo=unlicense)][project-license]
 [![Go v1.21](https://img.shields.io/badge/Go-%20v1.21-black?style=for-the-badge&logo=go)][gomod-file]
 
-simple, fast, distributed sql db
+lightweight, fast, distributed noSQL db
 
 </div>
 
@@ -347,14 +347,6 @@ for repositories. [Dependabot][dependabot-link] will implicitly create the
 The remaining labels can be created as needed!
 <br>
 
-
-## Credits
-
-<div align="center"><br>
-
-`orange` is powered by a template generated using [`go-template`][go-template-link]
-
-[![go-template](https://img.shields.io/badge/go--template-black?style=for-the-badge&logo=go)][go-template-link]
 
 </div>
 
