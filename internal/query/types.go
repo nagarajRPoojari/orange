@@ -34,5 +34,11 @@ type SelectOp struct {
 	ID       int64
 }
 
+// DeleteOp represents a parsed DELETE DOCUMENT FROM ... operation.
+type DeleteOp struct {
+	Document string
+	ID       int64
+}
+
 // Query is a generic interface for all query operation types (CreateOp, InsertOp, etc.).
 type Query interface{}

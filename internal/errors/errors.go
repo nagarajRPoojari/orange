@@ -68,3 +68,7 @@ func InsertError(msg string, args ...any) error {
 func SelectError(msg string, args ...any) error {
 	return DBError(fmt.Sprintf("select error: "+msg, args...))
 }
+
+func DeleteError(msg string, args ...any) error {
+	return DBError(fmt.Sprintf("select error: "+msg, args...))
+}

@@ -50,7 +50,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	)
 
 	assert.FileExists(t, path.Join(dir, "catalog", "test"))
-	assert.NoError(t, err, assert.AnError)
+	assert.NoError(t, err)
 	err = db.InsertDoc(
 		query.InsertOp{
 			Document: "test",
@@ -65,7 +65,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	)
 
 	assert.DirExists(t, path.Join(dir, "manifest"))
-	assert.NoError(t, err, assert.AnError)
+	assert.NoError(t, err)
 
 	got, err := db.GetDoc(
 		query.SelectOp{
@@ -83,6 +83,61 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	)
 
 	assert.Equal(t, wanted, got)
+}
+
+func TestOrangedb_DeleteDoc(t *testing.T) {
+	dir := t.TempDir()
+	db := odb.NewOrangedb(
+		odb.DBopts{
+			Dir: dir,
+		},
+	)
+
+	assert.NotNil(t, db)
+	err := db.CreateCollection(
+		query.CreateOp{
+			Document: "test",
+			Schema: query.Schema(map[string]interface{}{
+				"_ID":  map[string]interface{}{"auto_increment": false},
+				"name": "STRING",
+				"age":  map[string]interface{}{"name": "INT8"},
+			}),
+		},
+	)
+
+	assert.FileExists(t, path.Join(dir, "catalog", "test"))
+	assert.NoError(t, err)
+	err = db.InsertDoc(
+		query.InsertOp{
+			Document: "test",
+			Value: map[string]interface{}{
+				"_ID":  int64(90102),
+				"name": "hello",
+				"age": map[string]interface{}{
+					"name": 12,
+				},
+			},
+		},
+	)
+
+	assert.DirExists(t, path.Join(dir, "manifest"))
+	assert.NoError(t, err)
+
+	err = db.DeleteDoc(
+		query.DeleteOp{
+			Document: "test",
+			ID:       int64(90102),
+		},
+	)
+
+	assert.NoError(t, err)
+	_, err = db.GetDoc(
+		query.SelectOp{
+			Document: "test",
+			ID:       int64(90102),
+		},
+	)
+	assert.Error(t, err)
 }
 
 func TestOragedb_InsertDoc(t *testing.T) {
@@ -107,7 +162,7 @@ func TestOragedb_InsertDoc(t *testing.T) {
 	)
 
 	assert.FileExists(t, path.Join(dir, "catalog", "test"))
-	assert.NoError(t, err, assert.AnError)
+	assert.NoError(t, err)
 	err = db.InsertDoc(
 		query.InsertOp{
 			Document: "test",
@@ -122,7 +177,7 @@ func TestOragedb_InsertDoc(t *testing.T) {
 	)
 
 	assert.DirExists(t, path.Join(dir, "manifest"))
-	assert.NoError(t, err, assert.AnError)
+	assert.NoError(t, err)
 }
 
 func TestOragedb_CreateCollection(t *testing.T) {
