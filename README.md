@@ -1,20 +1,9 @@
 # orange
 
-<div align="center">
 
-
-[![Build Status](https://img.shields.io/github/checks-status/nagarajRPoojari/orange/main?color=black&style=for-the-badge&logo=github)][github-actions]
-[![Code Coverage](https://img.shields.io/codecov/c/github/nagarajRPoojari/orange?color=blue&logo=codecov&style=for-the-badge)][github-actions-tests]
-[![Security: GoSec](https://img.shields.io/badge/Security-GoSec-lightgrey?style=for-the-badge&logo=springsecurity)](https://github.com/securego/gosec)
-[![Dependencies Status](https://img.shields.io/badge/Dependencies-Up%20to%20Date-brightgreen?style=for-the-badge&logo=dependabot)][dependabot-pulls]
-[![Semantic Versioning](https://img.shields.io/badge/versioning-semantic-black?style=for-the-badge&logo=semver)][github-releases]
-[![Pre-Commit Enabled](https://img.shields.io/badge/Pre--Commit-Enabled-blue?style=for-the-badge&logo=pre-commit)][precommit-config]
-[![License](https://img.shields.io/github/license/nagarajRPoojari/orange?color=red&style=for-the-badge&logo=unlicense)][project-license]
-[![Go v1.21](https://img.shields.io/badge/Go-%20v1.21-black?style=for-the-badge&logo=go)][gomod-file]
-
-lightweight, fast, distributed noSQL db
-
-</div>
+> [!NOTE]  
+> orange is a lightweight, fast, distributed noSQL db backed by [parrot](https://github.com/nagarajRPoojari/orange/main/parrot) storage-engine
+> inspired by pebble, roseDB, levelsDB and many more
 
 
 ## Initial Setup
