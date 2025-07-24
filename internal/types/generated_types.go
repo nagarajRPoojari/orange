@@ -18,6 +18,8 @@ var AllTypes = map[string]struct{}{
 	"TIME": {},
 	"DATETIME": {},
 	"TIMESTAMP": {},
+	"DECIMAL": {},
+	"BYTE": {},
 	"ID": {},
 }
 func TypeCast(castTo string, val interface{}) (interface{}, error) { 
@@ -50,6 +52,10 @@ switch castTo {
 	 	 return ToDATETIME(val) 
  	 case "TIMESTAMP": 
 	 	 return ToTIMESTAMP(val) 
+ 	 case "DECIMAL": 
+	 	 return ToDECIMAL(val) 
+ 	 case "BYTE": 
+	 	 return ToBYTE(val) 
  	 case "ID": 
 	 	 return ToID(val) 
 	}

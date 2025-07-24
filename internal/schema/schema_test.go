@@ -19,7 +19,7 @@ func TestSchemaHandler_Verifier(t *testing.T) {
 			schema: query.Schema(map[string]interface{}{
 				"_ID":  map[string]interface{}{"auto_increment": false},
 				"name": "DATETIME",
-				"age":  map[string]interface{}{"name": "BLOB"},
+				"age":  map[string]interface{}{"name": "BYTE"},
 			}),
 			wantErr: false,
 		},
@@ -93,7 +93,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 				schema: query.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": false},
 					"name": "DATETIME",
-					"age":  map[string]interface{}{"name": "BLOB"},
+					"age":  map[string]interface{}{"name": "BYTE"},
 				}),
 			},
 			wantErr: false,
@@ -105,7 +105,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 				schema: query.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": false},
 					"name": "INT",
-					"age":  map[string]interface{}{"name": "BLOB"},
+					"age":  map[string]interface{}{"name": "BYTE"},
 				}),
 			},
 			wantErr: true,
@@ -117,7 +117,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 				schema: query.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": "int"}, // auto_increment should be bool
 					"name": "FLOAT64",
-					"age":  map[string]interface{}{"name": "BLOB"},
+					"age":  map[string]interface{}{"name": "BYTE"},
 				}),
 			},
 			wantErr: true,

@@ -4,10 +4,13 @@ package types
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
 	"encoding/gob"
+
+	"github.com/shopspring/decimal"
 
 	"github.com/nagarajRPoojari/orange/internal/errors"
 )
@@ -78,7 +81,10 @@ type DATETIME datetimeValue
 type TIMESTAMP timestampValue
 
 // decimal / numeric
-// type DECIMAL decimalValue
+type DECIMAL decimalValue
+
+type BYTE byteValue
+
 // type NUMERIC numericValue
 
 // // uuid
@@ -133,7 +139,7 @@ type datetimeValue time.Time
 
 type timestampValue time.Time
 
-// type decimalValue string // to store arbitrary precision decimal as string
+type decimalValue string // to store arbitrary precision decimal as string
 
 // type numericValue string
 
@@ -298,6 +304,35 @@ func tofloat32(v interface{}) (float32, error) {
 	}
 }
 
+func todecimal(v interface{}) (string, error) {
+	switch val := v.(type) {
+	case decimal.Decimal:
+		return val.String(), nil
+	case decimalValue:
+		return string(val), nil
+	case string:
+		d, err := decimal.NewFromString(val)
+		if err != nil {
+			return "", fmt.Errorf("invalid decimal string: %w", err)
+		}
+		return d.String(), nil
+	case float64:
+		return decimal.NewFromFloat(val).String(), nil
+	case float32:
+		return decimal.NewFromFloat32(val).String(), nil
+	case int:
+		return decimal.NewFromInt(int64(val)).String(), nil
+	case int64:
+		return decimal.NewFromInt(val).String(), nil
+	case uint:
+		return decimal.NewFromInt(int64(val)).String(), nil
+	case uint64:
+		return decimal.NewFromInt(int64(val)).String(), nil
+	default:
+		return "", fmt.Errorf("expected decimal-compatible value, got %T", v)
+	}
+}
+
 func tobool(v interface{}) (bool, error) {
 	switch val := v.(type) {
 	case bool:
@@ -310,6 +345,75 @@ func tobool(v interface{}) (bool, error) {
 		}
 	}
 	return false, errors.TypeCastError(fmt.Sprintf("expected bool-compatible value, got %T", v))
+}
+
+func tobyte(v interface{}) (byte, error) {
+	switch val := v.(type) {
+	case byte:
+		return val, nil
+	case int:
+		if val < 0 || val > 255 {
+			return 0, fmt.Errorf("int value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case int8:
+		if val < 0 {
+			return 0, fmt.Errorf("int8 value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case int16:
+		if val < 0 || val > 255 {
+			return 0, fmt.Errorf("int16 value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case int32:
+		if val < 0 || val > 255 {
+			return 0, fmt.Errorf("int32 value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case int64:
+		if val < 0 || val > 255 {
+			return 0, fmt.Errorf("int64 value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case uint:
+		if val > 255 {
+			return 0, fmt.Errorf("uint value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case uint16:
+		if val > 255 {
+			return 0, fmt.Errorf("uint16 value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case uint32:
+		if val > 255 {
+			return 0, fmt.Errorf("uint32 value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case uint64:
+		if val > 255 {
+			return 0, fmt.Errorf("uint64 value %d out of byte range", val)
+		}
+		return byte(val), nil
+	case float32:
+		if val < 0 || val > 255 {
+			return 0, fmt.Errorf("float32 value %f out of byte range", val)
+		}
+		return byte(val), nil
+	case float64:
+		if val < 0 || val > 255 {
+			return 0, fmt.Errorf("float64 value %f out of byte range", val)
+		}
+		return byte(val), nil
+	case string:
+		if len(val) == 1 {
+			return val[0], nil
+		}
+		return 0, fmt.Errorf("cannot convert string %q to byte (must be single character)", val)
+	default:
+		return 0, fmt.Errorf("unsupported type %s for tobyte conversion", reflect.TypeOf(v))
+	}
 }
 
 func tostring(v interface{}) (string, error) {
@@ -515,4 +619,20 @@ func ToTIMESTAMP(v interface{}) (TIMESTAMP, error) {
 		return TIMESTAMP{}, err
 	}
 	return TIMESTAMP(t), nil
+}
+
+func ToDECIMAL(v interface{}) (DECIMAL, error) {
+	t, err := todecimal(v)
+	if err != nil {
+		return DECIMAL(""), err
+	}
+	return DECIMAL(t), nil
+}
+
+func ToBYTE(v interface{}) (BYTE, error) {
+	t, err := tobyte(v)
+	if err != nil {
+		return BYTE(0), err
+	}
+	return BYTE(t), nil
 }
