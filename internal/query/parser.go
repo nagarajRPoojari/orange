@@ -170,14 +170,27 @@ func unmarshallValue(input JSONString) (Value, error) {
 // Returns an error if parsing fails or if _ID is missing.
 func (t *Parser) ParseSelectQuery() (SelectOp, error) {
 	name, err := extractDocumentNameFromSelectQuery(t.input)
+	var null SelectOp
 	if err != nil {
-		var null SelectOp
 		return null, err
+	}
+
+	if IsSelectAll(t.input) {
+		_, err := extractID(t.input)
+		if err == nil {
+			return null, errors.SQLSyntaxError("unexpected _ID in select all query")
+		}
+
+		return SelectOp{
+			Document: name,
+			Columns:  []string{"*"},
+			ID:       0,
+		}, nil
+
 	}
 
 	_id, err := extractID(t.input)
 	if err != nil {
-		var null SelectOp
 		return null, err
 	}
 
@@ -187,6 +200,13 @@ func (t *Parser) ParseSelectQuery() (SelectOp, error) {
 		Columns:  cols,
 		ID:       _id,
 	}, nil
+}
+
+func IsSelectAll(query string) bool {
+	// (?i) makes the regex case-insensitive
+	pattern := `(?i)^\s*SELECT\s+\*\s+FROM`
+	match, _ := regexp.MatchString(pattern, query)
+	return match
 }
 
 func extractID(input string) (int64, error) {

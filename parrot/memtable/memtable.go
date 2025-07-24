@@ -239,7 +239,14 @@ func (t *MemtableStore[K, V]) rollback(file string) {
 		return
 	}
 	for _, event := range events {
-		t.Write(event.Key, event.Value)
+
+		switch event.Op {
+		case WriteOperation:
+			t.Write(event.Key, event.Value)
+		case DeleteOperation:
+			t.Delete(event.Key, event.Value)
+		}
+
 	}
 }
 
@@ -351,4 +358,65 @@ func (t *MemtableStore[K, V]) Read(key K) (V, bool) {
 func (t *MemtableStore[K, V]) Delete(key K, tomstone V) error {
 	t.mem.Delete(key, tomstone)
 	return nil
+}
+
+// Expensive ops
+func (t *MemtableStore[K, V]) ReadAll() ([]V, error) {
+	// Search backwards in Queue
+
+	log.Infof("Started reading from memtables")
+
+	result := make([]V, 0)
+	keysMap := make(map[K]struct{}, 0)
+
+	node := t.q.tail
+	for node != nil {
+
+		node.mem.mu.Lock()
+		for k, v := range node.mem.data {
+			if v.IsDeleted() {
+				keysMap[k] = struct{}{}
+			} else {
+				result = append(result, v)
+			}
+		}
+		node.mem.mu.Unlock()
+		node = node.Prev
+	}
+
+	log.Infof("Started reading from sst")
+
+	// Search backward at all sst
+	level, _ := t.mf.GetLSM().GetLevel(0)
+	cnt := 0
+
+	for level != nil {
+		tbls := level.GetTables()
+		index := 0
+		sortedKeys := make([]int, len(tbls))
+		for k := range tbls {
+			sortedKeys[index] = k
+			index++
+		}
+
+		sort.Slice(sortedKeys, func(i, j int) bool {
+			return sortedKeys[i] > sortedKeys[j]
+		})
+
+		for _, mapKey := range sortedKeys {
+			table := tbls[mapKey]
+			val, _ := t.DecoderCache.GetFullPayload(table.DBPath, table.IndexPath)
+			for _, p := range val {
+				if p.Val.IsDeleted() {
+					keysMap[p.Key] = struct{}{}
+				} else {
+					result = append(result, p.Val)
+				}
+			}
+		}
+		cnt++
+		level, _ = t.mf.GetLSM().GetLevel(cnt)
+	}
+
+	return result, nil
 }

@@ -114,6 +114,10 @@ func (t *Storage[K, V]) Delete(key K, tomstone V) WriteStatus {
 	return t.writer.Delete(key, tomstone)
 }
 
+func (t *Storage[K, V]) GetAll() ([]V, error) {
+	return t.reader.GetAll()
+}
+
 type ReadStatus[V types.Value] struct {
 	Value V
 	Err   error
@@ -148,6 +152,10 @@ func (t *Reader[K, V]) Get(key K) ReadStatus[V] {
 		return ReadStatus[V]{Err: errors.RaiseKeyNotFoundErr("key=%v", key)}
 	}
 	return ReadStatus[V]{Value: val}
+}
+
+func (t *Reader[K, V]) GetAll() ([]V, error) {
+	return t.store.ReadAll()
 }
 
 type WriteStatus struct {
