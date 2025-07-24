@@ -33,13 +33,13 @@ var replCmd = &cobra.Command{
 			input = strings.TrimSpace(input)
 
 			if input == "exit" || input == "quit" {
-				fmt.Println("# Exiting...")
+				fmt.Println("# bye...")
 				break
 			}
 
 			res, err := db.ProcessQuery(input)
 			if err != nil {
-				fmt.Printf("%#v\n", err)
+				fmt.Printf("%v\n", err)
 			} else {
 				prettyJSON, err := json.MarshalIndent(res, "", "  ")
 				if err != nil {

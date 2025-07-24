@@ -4,52 +4,67 @@ import (
 	"fmt"
 )
 
+// SQLError represents a general SQL error.
 type SQLError string
 
-func (t SQLError) Error() string {
-	return fmt.Sprintf("SQL error: %s", string(t))
+func (e SQLError) Error() string {
+	return fmt.Sprintf("SQL error: %s", string(e))
 }
 
-func SQLParseError(msg string) error {
-	return SQLError("SQL parse error: " + msg)
+func SQLParseError(msg string, args ...any) error {
+	return SQLError(fmt.Sprintf("parse error: "+msg, args...))
 }
 
-func SQLSyntaxError(msg string) error {
-	return SQLError("SQL syntax error: " + msg)
+func SQLSyntaxError(msg string, args ...any) error {
+	return SQLError(fmt.Sprintf("syntax error: "+msg, args...))
 }
 
+// SchemaError represents a schema-related error.
 type SchemaError string
 
-func (t SchemaError) Error() string {
-	return fmt.Sprintf("Schema error: %s", string(t))
+func (e SchemaError) Error() string {
+	return fmt.Sprintf("Schema error: %s", string(e))
 }
 
-func SchemaValidationError(msg string) error {
-	return SchemaError("validation error: " + msg)
+func SchemaValidationError(msg string, args ...any) error {
+	return SchemaError(fmt.Sprintf("validation error: "+msg, args...))
 }
 
-func SchemaJSONMarshallError(msg string) error {
-	return SchemaError(msg)
+func SchemaJSONMarshallError(msg string, args ...any) error {
+	return SchemaError(fmt.Sprintf("JSON marshall error: "+msg, args...))
 }
 
-func SchemaJSONUnMarshallError(msg string) error {
-	return SchemaError(msg)
+func SchemaJSONUnmarshallError(msg string, args ...any) error {
+	return SchemaError(fmt.Sprintf("JSON unmarshall error: "+msg, args...))
 }
 
-func DuplicateSchemaError(msg string) error {
-	return SchemaError("duplicate schema found: " + msg)
+func DuplicateSchemaError(msg string, args ...any) error {
+	return SchemaError(fmt.Sprintf("duplicate schema: "+msg, args...))
 }
 
-func TypeCastError(msg string) error {
-	return SchemaError("failed to typecast: " + msg)
+func TypeCastError(msg string, args ...any) error {
+	return SchemaError(fmt.Sprintf("typecast failed: "+msg, args...))
 }
 
+func UnknownField(msg string, args ...any) error {
+	return SchemaError(fmt.Sprintf("unknown field: "+msg, args...))
+}
+
+func MissingFields(msg string, args ...any) error {
+	return SchemaError(fmt.Sprintf("missing fields: "+msg, args...))
+}
+
+// DBError represents a general database error.
 type DBError string
 
-func (t DBError) Error() string {
-	return fmt.Sprintf("Schema error: %s", string(t))
+func (e DBError) Error() string {
+	return fmt.Sprintf("Database error: %s", string(e))
 }
 
-func InsertError(msg string) error {
-	return DBError("insert error: " + msg)
+func InsertError(msg string, args ...any) error {
+	return DBError(fmt.Sprintf("insert error: "+msg, args...))
+}
+
+func SelectError(msg string, args ...any) error {
+	return DBError(fmt.Sprintf("select error: "+msg, args...))
 }

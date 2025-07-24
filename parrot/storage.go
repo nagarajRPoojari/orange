@@ -8,7 +8,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 
 	v2 "github.com/nagarajRPoojari/orange/parrot/cache/v2"
 	"github.com/nagarajRPoojari/orange/parrot/compactor"
@@ -99,7 +98,6 @@ func (t *Storage[K, V]) Get(key K) ReadStatus[V] {
 }
 
 func (t *Storage[K, V]) Put(key K, value V) WriteStatus {
-	fmt.Println("got put request")
 	return t.writer.Put(key, value)
 }
 
