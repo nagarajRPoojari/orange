@@ -77,6 +77,9 @@ func (t *Oragedb) ProcessQuery(q string) (any, error) {
 	case query.InsertOp:
 		return nil, t.InsertDoc(v)
 	case query.SelectOp:
+		if len(v.Columns) > 0 && v.Columns[0] == "*" {
+			return t.GetAllDocs(v)
+		}
 		return t.GetDoc(v)
 	case query.DeleteOp:
 		return nil, t.DeleteDoc(v)
@@ -166,6 +169,37 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 	}
 
 	return nil
+}
+
+func (t *Oragedb) GetAllDocs(op query.SelectOp) ([]map[string]interface{}, error) {
+	schema, err := t.schemaHandler.LoadFromCatalog(op.Document)
+	if err != nil {
+		return nil, err
+	}
+
+	val, ok := t.dbMap.Load(op.Document)
+	if !ok {
+		db := t.createDB(op.Document)
+		t.dbMap.LoadOrStore(op.Document, db)
+
+		val = db
+	}
+
+	db, ok := val.(*storage.Storage[types.ID, *InternalValueType])
+	if !ok {
+		return nil, errors.SelectError("failed to get db for " + op.Document)
+	}
+
+	res, err := db.GetAll()
+	result := make([]map[string]interface{}, 0)
+	for _, v := range res {
+
+		// verifying loaded data & typecasting back to compatible schema types
+		t.schemaHandler.VerifyAndCastData(schema, v.Payload)
+		result = append(result, v.Payload)
+	}
+
+	return result, nil
 }
 
 // GetDoc retrieves a document by ID from the specified collection.
