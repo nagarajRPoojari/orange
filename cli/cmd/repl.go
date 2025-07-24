@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
 	odb "github.com/nagarajRPoojari/orange/internal/db"
+	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +21,7 @@ var replCmd = &cobra.Command{
 		fmt.Println("# orange repl")
 
 		db := odb.NewOrangedb(odb.DBopts{Dir: "./temp"})
-		// log.Disable()
+		log.Disable()
 		for {
 			fmt.Print("> ")
 			input, err := reader.ReadString('\n')
@@ -39,7 +41,12 @@ var replCmd = &cobra.Command{
 			if err != nil {
 				fmt.Printf("%#v\n", err)
 			} else {
-				fmt.Println(res)
+				prettyJSON, err := json.MarshalIndent(res, "", "  ")
+				if err != nil {
+					fmt.Printf("Error formatting JSON: %v\n", err)
+				} else {
+					fmt.Println(string(prettyJSON))
+				}
 			}
 
 		}
