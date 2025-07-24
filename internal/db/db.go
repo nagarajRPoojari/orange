@@ -84,8 +84,8 @@ func (t *Oragedb) createDB(dbName string) *storage.Storage[types.ID, InternalVal
 		storage.StorageOpts{
 			Directory:         t.opts.Dir,
 			MemtableThreshold: MEMTABLE_THRESHOLD,
-			WalLogDir:         t.opts.Dir,
-			GCLogDir:          t.opts.Dir,
+			WalLogDir:         path.Join(t.opts.Dir, dbName),
+			GCLogDir:          path.Join(t.opts.Dir, dbName),
 			TurnOnCompaction:  false,
 			TurnOnWal:         true,
 		})

@@ -50,6 +50,12 @@ func init() {
 	gob.Register(DATETIME{})
 	gob.Register(TIMESTAMP{})
 
+	// byte
+	gob.Register(BYTE(0))
+
+	// decimal
+	gob.Register(DECIMAL(""))
+
 }
 
 // basic types
@@ -84,14 +90,6 @@ type TIMESTAMP timestampValue
 type DECIMAL decimalValue
 
 type BYTE byteValue
-
-// type NUMERIC numericValue
-
-// // uuid
-// type UUID uuidValue
-
-// // blob
-// type BLOB blobValue
 
 type ID struct {
 	K int64
@@ -131,13 +129,20 @@ type stringValue string
 // byte
 type byteValue byte
 
-type dateValue time.Time // usually stored as YYYY-MM-DD
+type dateValue struct {
+	Time time.Time
+}
 
-type timeValue time.Time // usually stored as HH:MM:SS
+type timeValue struct {
+	Time time.Time
+}
 
-type datetimeValue time.Time
-
-type timestampValue time.Time
+type datetimeValue struct {
+	Time time.Time
+}
+type timestampValue struct {
+	Time time.Time
+}
 
 type decimalValue string // to store arbitrary precision decimal as string
 
@@ -594,7 +599,7 @@ func ToDATE(v interface{}) (DATE, error) {
 	if err != nil {
 		return DATE{}, err
 	}
-	return DATE(t), nil
+	return DATE{Time: t}, nil
 }
 
 func ToTIME(v interface{}) (TIME, error) {
@@ -602,7 +607,7 @@ func ToTIME(v interface{}) (TIME, error) {
 	if err != nil {
 		return TIME{}, err
 	}
-	return TIME(t), nil
+	return TIME{Time: t}, nil
 }
 
 func ToDATETIME(v interface{}) (DATETIME, error) {
@@ -610,7 +615,7 @@ func ToDATETIME(v interface{}) (DATETIME, error) {
 	if err != nil {
 		return DATETIME{}, err
 	}
-	return DATETIME(t), nil
+	return DATETIME{Time: t}, nil
 }
 
 func ToTIMESTAMP(v interface{}) (TIMESTAMP, error) {
@@ -618,7 +623,7 @@ func ToTIMESTAMP(v interface{}) (TIMESTAMP, error) {
 	if err != nil {
 		return TIMESTAMP{}, err
 	}
-	return TIMESTAMP(t), nil
+	return TIMESTAMP{Time: t}, nil
 }
 
 func ToDECIMAL(v interface{}) (DECIMAL, error) {
