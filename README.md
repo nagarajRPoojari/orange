@@ -2,8 +2,11 @@
 
 
 > [!NOTE]  
-> orange is a lightweight, fast, distributed noSQL db backed by [parrot](https://github.com/nagarajRPoojari/orange/main/parrot) storage-engine
+> orange is a lightweight, fast, distributed[WIP] noSQL db backed by [parrot](https://github.com/nagarajRPoojari/orange/main/parrot) storage-engine
+> 
 > inspired by pebble, roseDB, levelsDB and many more
+
+<img width="440" height="275" alt="Screenshot from 2025-07-25 10-46-50" src="https://github.com/user-attachments/assets/35d00b88-b6d0-4bde-a246-b4ed2ad4112c" />
 
 
 ## Initial Setup
