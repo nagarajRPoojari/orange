@@ -16,6 +16,7 @@ var replCmd = &cobra.Command{
 
 	Use:   "repl",
 	Short: "Play with orangedb",
+	Long:  `a simple repl interface to play with local orangedb instanc`,
 	Run: func(cmd *cobra.Command, args []string) {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Println("# orange repl")
@@ -51,8 +52,4 @@ var replCmd = &cobra.Command{
 
 		}
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(replCmd)
 }
