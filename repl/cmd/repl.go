@@ -15,7 +15,7 @@ import (
 var replCmd = &cobra.Command{
 
 	Use:   "repl",
-	Short: "Start a REPL-style input loop",
+	Short: "Play with orangedb",
 	Run: func(cmd *cobra.Command, args []string) {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Println("# orange repl")
