@@ -166,8 +166,6 @@ type MemtableStore[K types.Key, V types.Value] struct {
 	memNode *Node[K, V]
 
 	flusher *Flusher[K, V]
-	//flusher concelFunc for canceling flusher daemon
-	flusherCancelFunc context.CancelFunc
 
 	// Cache for decoded values to speed up reads
 	DecoderCache *v2.CacheManager[K, V]
@@ -293,9 +291,10 @@ func (t *MemtableStore[K, V]) Read(key K) (V, bool) {
 	node := t.q.tail
 	for node != nil {
 		v, flag := node.mem.Read(key)
-		if flag == flags.KeyFoundFlag {
+		switch flag {
+		case flags.KeyFoundFlag:
 			return v, true
-		} else if flag == flags.KeyDeletedFlag {
+		case flags.KeyDeletedFlag:
 			return null, false
 		}
 		node = node.Prev
