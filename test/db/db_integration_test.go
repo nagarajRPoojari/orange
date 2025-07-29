@@ -21,6 +21,7 @@ func init() {
 func TestOragedb_Init(t *testing.T) {
 	dir := t.TempDir()
 	db := odb.NewOrangedb(
+		t.Context(),
 		odb.DBopts{
 			Dir: dir,
 		},
@@ -32,6 +33,7 @@ func TestOragedb_Init(t *testing.T) {
 func TestOrangedb_SelectDoc(t *testing.T) {
 	dir := t.TempDir()
 	db := odb.NewOrangedb(
+		t.Context(),
 		odb.DBopts{
 			Dir: dir,
 		},
@@ -89,6 +91,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 func TestOrangedb_DeleteDoc(t *testing.T) {
 	dir := t.TempDir()
 	db := odb.NewOrangedb(
+		t.Context(),
 		odb.DBopts{
 			Dir: dir,
 		},
@@ -144,6 +147,7 @@ func TestOrangedb_DeleteDoc(t *testing.T) {
 func TestOragedb_InsertDoc(t *testing.T) {
 	dir := t.TempDir()
 	db := odb.NewOrangedb(
+		t.Context(),
 		odb.DBopts{
 			Dir: dir,
 		},
@@ -230,7 +234,7 @@ func TestOragedb_CreateCollection(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr := odb.NewOrangedb(tt.fields.opts)
+			tr := odb.NewOrangedb(t.Context(), tt.fields.opts)
 			err := tr.CreateCollection(tt.args.op)
 			assert.Equal(t, tt.wantErr, err != nil, "Oragedb.CreateCollection() error = %v", err)
 		})
@@ -240,7 +244,7 @@ func TestOragedb_CreateCollection(t *testing.T) {
 func TestOrangedb_ProcessQuery(t *testing.T) {
 	log.Disable()
 
-	db := odb.NewOrangedb(odb.DBopts{Dir: t.TempDir()})
+	db := odb.NewOrangedb(t.Context(), odb.DBopts{Dir: t.TempDir()})
 	_, err := db.ProcessQuery(
 		`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`,
 	)

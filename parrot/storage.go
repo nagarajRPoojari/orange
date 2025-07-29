@@ -51,15 +51,14 @@ type Storage[K types.Key, V types.Value] struct {
 	reader *Reader[K, V]
 	writer *Writer[K, V]
 
+	// context for smooth teardown
+	context context.Context
+
 	opts StorageOpts
 }
 
-func NewStorage[K types.Key, V types.Value](
-	name string,
-	ctx context.Context,
-	opts StorageOpts,
-) *Storage[K, V] {
-	v := &Storage[K, V]{name: name, opts: opts}
+func NewStorage[K types.Key, V types.Value](name string, ctx context.Context, opts StorageOpts) *Storage[K, V] {
+	v := &Storage[K, V]{name: name, context: ctx, opts: opts}
 	v.createOrLoadCollection()
 	v.reader = NewReader(v.store, ReaderOpts{})
 	v.writer = NewWriter(v.store, WriterOpts{})
@@ -87,12 +86,11 @@ func (t *Storage[K, V]) createOrLoadCollection() {
 	mf := metadata.NewManifest(t.name, metadata.ManifestOpts{Dir: t.opts.Directory})
 	mf.Load()
 
-	ctx, _ := context.WithCancel(context.Background())
-	mf.SyncLoop(ctx)
+	mf.SyncLoop(t.context)
 
 	mt := memtable.NewMemtableStore[K, V](
 		mf,
-		ctx,
+		t.context,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: int64(t.opts.MemtableThreshold),
 			QueueHardLimit:    t.opts.QueueHardLimit,
