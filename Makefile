@@ -30,6 +30,10 @@ help: Makefile
 	sed -n 's/^[ \t]*##//p' $< | column -t -s ':' |  sed -e 's/^//'
 	echo
 
+.PHONY: repl
+## `repl`: Play with orangedb through OQL
+repl:
+	go run repl/main.go
 
 .PHONY: local-setup
 ## `local-setup`: Setup development environment locally
