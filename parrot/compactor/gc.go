@@ -104,6 +104,7 @@ func (t *GC[K, V]) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			log.Infof("Shutting down gc")
 			return
 		case <-ticker.C:
 			// gc should run synchronously
