@@ -31,16 +31,17 @@ import (
 func TestGC(t *testing.T) {
 	log.Disable()
 	tempDir := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: tempDir})
 	mf.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{MemtableSoftLimit: 1024},
 	)
 	d := types.IntValue{V: 0}
@@ -88,18 +89,19 @@ func TestGC(t *testing.T) {
 func TestGC_Intensive(t *testing.T) {
 	log.Disable()
 	tempDir := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 
 	const MEMTABLE_THRESHOLD = 1024
 
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: tempDir})
 	mf.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
 	)
 	d := types.IntValue{V: 0}

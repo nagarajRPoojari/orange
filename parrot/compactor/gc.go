@@ -51,12 +51,7 @@ type GC[K types.Key, V types.Value] struct {
 	wal *wal.WAL[Event]
 }
 
-func NewGC[K types.Key, V types.Value](
-	mf *metadata.Manifest,
-	cache *v2.CacheManager[K, V],
-	strategy CompactionStrategy[K, V],
-	logDir string,
-) *GC[K, V] {
+func NewGC[K types.Key, V types.Value](mf *metadata.Manifest, cache *v2.CacheManager[K, V], strategy CompactionStrategy[K, V], logDir string) *GC[K, V] {
 	logPath := filepath.Join(logDir, "gc-wal.log")
 	wl, _ := wal.NewWAL[Event](logPath)
 
@@ -104,6 +99,7 @@ func (t *GC[K, V]) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			log.Infof("Shutting down gc")
 			return
 		case <-ticker.C:
 			// gc should run synchronously

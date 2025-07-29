@@ -113,10 +113,12 @@ func BenchmarkMemtable_Write_With_WAL(t *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	// overflow first memtable to trigger flush
-	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](mf,
+	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
+		mf,
+		ctx,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: MEMTABLE_THRESHOLD,
 			LogDir:            temp,
@@ -150,19 +152,19 @@ func BenchmarkMemtable_Write_With_WAL(t *testing.B) {
 //   - cache & manifest sync() are enabled
 func BenchmarkMemtable_Write_Without_WAL(t *testing.B) {
 	log.Disable()
+	ctx := t.Context()
 
 	const MEMTABLE_THRESHOLD = 1024 * 2 * 1024
 	temp := "test"
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: temp})
 	mf.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	// overflow first memtable to trigger flush
-	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](mf,
+	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
+		mf,
+		ctx,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: MEMTABLE_THRESHOLD,
 			LogDir:            temp,

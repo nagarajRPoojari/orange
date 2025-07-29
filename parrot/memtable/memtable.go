@@ -7,6 +7,7 @@
 package memtable
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -172,10 +173,7 @@ type MemtableStore[K types.Key, V types.Value] struct {
 	opts MemtableOpts
 }
 
-func NewMemtableStore[K types.Key, V types.Value](
-	mf *metadata.Manifest,
-	opts MemtableOpts,
-) *MemtableStore[K, V] {
+func NewMemtableStore[K types.Key, V types.Value](mf *metadata.Manifest, ctx context.Context, opts MemtableOpts) *MemtableStore[K, V] {
 	q := NewQueue[K, V](QueueOpts{HardLimit: opts.QueueHardLimit})
 	mem := NewMemtable[K, V](opts)
 	node := NewNode(mem)
@@ -185,7 +183,7 @@ func NewMemtableStore[K types.Key, V types.Value](
 	q.Push(node)
 
 	flusher := NewFlusher(q, mf, FlusherOpts{})
-	go flusher.Run()
+	go flusher.Run(ctx)
 
 	memStore := &MemtableStore[K, V]{
 		mf:           mf,
@@ -293,9 +291,10 @@ func (t *MemtableStore[K, V]) Read(key K) (V, bool) {
 	node := t.q.tail
 	for node != nil {
 		v, flag := node.mem.Read(key)
-		if flag == flags.KeyFoundFlag {
+		switch flag {
+		case flags.KeyFoundFlag:
 			return v, true
-		} else if flag == flags.KeyDeletedFlag {
+		case flags.KeyDeletedFlag:
 			return null, false
 		}
 		node = node.Prev

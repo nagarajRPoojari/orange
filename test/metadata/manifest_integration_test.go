@@ -110,7 +110,7 @@ func TestManifest_Sync(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	go m.Sync(ctx)
+	m.SyncLoop(ctx)
 
 	for range 10 {
 		level, _ := m.LSM0.GetLevel(0)

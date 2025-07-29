@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -20,8 +21,10 @@ var replCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Println("# orange repl")
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
-		db := odb.NewOrangedb(odb.DBopts{Dir: "./temp"})
+		db := odb.NewOrangedb(ctx, odb.DBopts{Dir: "./temp"})
 		log.Disable()
 		for {
 			fmt.Print("> ")

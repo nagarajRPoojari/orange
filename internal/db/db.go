@@ -46,11 +46,14 @@ type Oragedb struct {
 
 	dbMap *sync.Map
 
+	// context for smooth teardown
+	context context.Context
+
 	opts *DBopts
 }
 
 // NewOrangedb initializes the Oragedb instance with schema and config setup
-func NewOrangedb(opts DBopts) *Oragedb {
+func NewOrangedb(context context.Context, opts DBopts) *Oragedb {
 
 	return &Oragedb{
 		schemaHandler: schema.NewSchemaHandler(
@@ -58,8 +61,9 @@ func NewOrangedb(opts DBopts) *Oragedb {
 				Dir: path.Join(opts.Dir, "catalog"),
 			},
 		),
-		dbMap: &sync.Map{},
-		opts:  &opts,
+		context: context,
+		dbMap:   &sync.Map{},
+		opts:    &opts,
 	}
 }
 
@@ -98,11 +102,10 @@ func (t *Oragedb) createDB(dbName string) *storage.Storage[types.ID, *InternalVa
 
 	// @todo: read from config
 	const MEMTABLE_THRESHOLD = 1024 * 2
-	ctx, _ := context.WithCancel(context.Background())
 
 	db := storage.NewStorage[types.ID, *InternalValueType](
 		dbName,
-		ctx,
+		t.context,
 		storage.StorageOpts{
 			Directory:         t.opts.Dir,
 			MemtableThreshold: MEMTABLE_THRESHOLD,

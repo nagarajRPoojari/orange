@@ -7,7 +7,6 @@
 package memtable_test
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -24,10 +23,12 @@ import (
 // without triggering a flush to disk.
 func TestMemtable_Write_And_Read_In_Mem(t *testing.T) {
 	log.Disable()
+	ctx := t.Context()
 
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: t.TempDir()})
 	mts := memtable.NewMemtableStore[types.StringKey, *types.StringValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{MemtableSoftLimit: 1024, QueueHardLimit: 10},
 	)
 	k, v := types.StringKey{K: "key-0"}, types.StringValue{V: "val-0"}
@@ -46,16 +47,15 @@ func TestMemtable_Write_And_Read_In_Mem(t *testing.T) {
 // after clearing the in-memory state.
 func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 	log.Disable()
+	ctx := t.Context()
 
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: t.TempDir()})
 	mf.Load()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{MemtableSoftLimit: 1024},
 	)
 	d := types.IntValue{V: 0}
@@ -91,6 +91,7 @@ func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 //   - max concurrent readers limited to 5000
 func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 	log.Disable()
+	ctx := t.Context()
 
 	const MEMTABLE_THRESHOLD = 1024
 	const MAX_CONCURRENT_READ_ROUTINES = 5000
@@ -98,14 +99,12 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: t.TempDir()})
 	mf.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	// overflow first memtable to trigger flush
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
 	)
 
@@ -158,6 +157,7 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 //   - max concurrent readers limited to 500
 func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	log.Disable()
+	ctx := t.Context()
 
 	const MEMTABLE_THRESHOLD = 1024 * 2
 	const MAX_CONCURRENT_READ_ROUTINES = 500
@@ -166,14 +166,12 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: temp})
 	mf.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	// overflow first memtable to trigger flush
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
 	)
 	d := types.IntValue{V: 0}
@@ -221,6 +219,7 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 //   - max concurrent readers limited to 500
 func TestMemtable_Rollback(t *testing.T) {
 	log.Disable()
+	ctx := t.Context()
 
 	const MEMTABLE_THRESHOLD = 1024 * 2
 	const MAX_CONCURRENT_READ_ROUTINES = 500
@@ -229,13 +228,11 @@ func TestMemtable_Rollback(t *testing.T) {
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: temp})
 	mf.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: MEMTABLE_THRESHOLD,
 			LogDir:            temp,
@@ -282,6 +279,7 @@ func TestMemtable_Rollback(t *testing.T) {
 
 func TestMemtable_Delete_In_Memory(t *testing.T) {
 	log.Disable()
+	ctx := t.Context()
 
 	const MEMTABLE_THRESHOLD = 1024 * 2
 	const MAX_CONCURRENT_READ_ROUTINES = 500
@@ -290,13 +288,11 @@ func TestMemtable_Delete_In_Memory(t *testing.T) {
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: temp})
 	mf.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: MEMTABLE_THRESHOLD,
 			LogDir:            temp,
@@ -349,6 +345,7 @@ func TestMemtable_Delete_In_Memory(t *testing.T) {
 
 func TestMemtable_Delete_On_Disk(t *testing.T) {
 	log.Disable()
+	ctx := t.Context()
 
 	const MEMTABLE_THRESHOLD = 1024 * 2
 	const MAX_CONCURRENT_READ_ROUTINES = 500
@@ -357,12 +354,11 @@ func TestMemtable_Delete_On_Disk(t *testing.T) {
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: temp})
 	mf.Load()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
+		ctx,
 		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
 	)
 	d := types.IntValue{V: 0}
