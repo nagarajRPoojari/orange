@@ -51,12 +51,7 @@ type GC[K types.Key, V types.Value] struct {
 	wal *wal.WAL[Event]
 }
 
-func NewGC[K types.Key, V types.Value](
-	mf *metadata.Manifest,
-	cache *v2.CacheManager[K, V],
-	strategy CompactionStrategy[K, V],
-	logDir string,
-) *GC[K, V] {
+func NewGC[K types.Key, V types.Value](mf *metadata.Manifest, cache *v2.CacheManager[K, V], strategy CompactionStrategy[K, V], logDir string) *GC[K, V] {
 	logPath := filepath.Join(logDir, "gc-wal.log")
 	wl, _ := wal.NewWAL[Event](logPath)
 

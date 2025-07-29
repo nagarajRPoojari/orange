@@ -7,6 +7,9 @@
 package memtable
 
 import (
+	"context"
+	"time"
+
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 
 	"github.com/nagarajRPoojari/orange/parrot/io"
@@ -35,11 +38,7 @@ type Flusher[K types.Key, V types.Value] struct {
 }
 
 // NewFlusher creates new instance of Flusher
-func NewFlusher[K types.Key, V types.Value](
-	q *Queue[K, V],
-	mf *metadata.Manifest,
-	opts FlusherOpts,
-) *Flusher[K, V] {
+func NewFlusher[K types.Key, V types.Value](q *Queue[K, V], mf *metadata.Manifest, opts FlusherOpts) *Flusher[K, V] {
 	return &Flusher[K, V]{
 		opts: opts,
 		q:    q,
@@ -47,11 +46,21 @@ func NewFlusher[K types.Key, V types.Value](
 	}
 }
 
-func (t *Flusher[K, V]) Run() {
+func (t *Flusher[K, V]) Run(ctx context.Context) {
+	// @todo: read from config
+	ticker := time.NewTicker(1000 * time.Millisecond)
+	defer ticker.Stop()
+
 	for {
-		// Pop waits for lock, which will be available on when atleast one
-		// disposable memtable available
-		t.q.Pop(t.flush)
+		select {
+		case <-ctx.Done():
+			log.Infof("Shutting down gc")
+			return
+		case <-ticker.C:
+			// Pop waits for lock, which will be available on when atleast one
+			// disposable memtable available
+			t.q.Pop(t.flush)
+		}
 	}
 }
 

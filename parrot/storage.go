@@ -88,9 +88,11 @@ func (t *Storage[K, V]) createOrLoadCollection() {
 	mf.Load()
 
 	ctx, _ := context.WithCancel(context.Background())
-	go mf.Sync(ctx)
+	mf.SyncLoop(ctx)
 
-	mt := memtable.NewMemtableStore[K, V](mf,
+	mt := memtable.NewMemtableStore[K, V](
+		mf,
+		ctx,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: int64(t.opts.MemtableThreshold),
 			QueueHardLimit:    t.opts.QueueHardLimit,

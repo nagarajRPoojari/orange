@@ -67,7 +67,11 @@ func (t *Manifest) Load() error {
 	return nil
 }
 
-func (t *Manifest) Sync(ctx context.Context) error {
+func (t *Manifest) SyncLoop(ctx context.Context) {
+	go t.sync(ctx)
+}
+
+func (t *Manifest) sync(ctx context.Context) error {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 

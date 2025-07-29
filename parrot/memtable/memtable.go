@@ -7,6 +7,7 @@
 package memtable
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -165,6 +166,8 @@ type MemtableStore[K types.Key, V types.Value] struct {
 	memNode *Node[K, V]
 
 	flusher *Flusher[K, V]
+	//flusher concelFunc for canceling flusher daemon
+	flusherCancelFunc context.CancelFunc
 
 	// Cache for decoded values to speed up reads
 	DecoderCache *v2.CacheManager[K, V]
@@ -172,10 +175,7 @@ type MemtableStore[K types.Key, V types.Value] struct {
 	opts MemtableOpts
 }
 
-func NewMemtableStore[K types.Key, V types.Value](
-	mf *metadata.Manifest,
-	opts MemtableOpts,
-) *MemtableStore[K, V] {
+func NewMemtableStore[K types.Key, V types.Value](mf *metadata.Manifest, ctx context.Context, opts MemtableOpts) *MemtableStore[K, V] {
 	q := NewQueue[K, V](QueueOpts{HardLimit: opts.QueueHardLimit})
 	mem := NewMemtable[K, V](opts)
 	node := NewNode(mem)
@@ -185,7 +185,7 @@ func NewMemtableStore[K types.Key, V types.Value](
 	q.Push(node)
 
 	flusher := NewFlusher(q, mf, FlusherOpts{})
-	go flusher.Run()
+	go flusher.Run(ctx)
 
 	memStore := &MemtableStore[K, V]{
 		mf:           mf,
