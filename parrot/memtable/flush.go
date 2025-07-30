@@ -19,6 +19,7 @@ import (
 )
 
 type FlusherOpts struct {
+	TimeInterval time.Duration
 }
 
 // Flusher handles asynchronous flushing of memtables.
@@ -47,8 +48,7 @@ func NewFlusher[K types.Key, V types.Value](q *Queue[K, V], mf *metadata.Manifes
 }
 
 func (t *Flusher[K, V]) Run(ctx context.Context) {
-	// @todo: read from config
-	ticker := time.NewTicker(1000 * time.Millisecond)
+	ticker := time.NewTicker(t.opts.TimeInterval)
 	defer ticker.Stop()
 
 	for {

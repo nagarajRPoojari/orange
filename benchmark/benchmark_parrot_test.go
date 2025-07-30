@@ -15,6 +15,7 @@ import (
 	"time"
 
 	storage "github.com/nagarajRPoojari/orange/parrot"
+	"github.com/nagarajRPoojari/orange/parrot/conf"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 
 	"github.com/nagarajRPoojari/orange/parrot/memtable"
@@ -47,12 +48,22 @@ func BenchmarkMemtable_Read(t *testing.B) {
 		dbName,
 		ctx,
 		storage.StorageOpts{
-			Directory:         tempDir,
-			MemtableThreshold: MEMTABLE_THRESHOLD,
-			TurnOnCompaction:  true,
-			TurnOnWal:         true,
-			GCLogDir:          tempDir,
-		})
+			Directory:                     tempDir,
+			MemtableThreshold:             MEMTABLE_THRESHOLD,
+			TurnOnMemtableWal:             true,
+			FlushTimeInterval:             1000 * time.Millisecond,
+			MemtableWALTimeInterval:       conf.DefaultWALTimeInterval,
+			MemtableWALEventChSize:        conf.DefaultWALEventBufferSize,
+			MemtableWALWriterBufferSize:   conf.DefaultWALEventBufferSize,
+			TurnOnCompaction:              true,
+			CompactionTimeInterval:        1000 * time.Millisecond,
+			CompactionWALTimeInterval:     conf.DefaultWALTimeInterval,
+			CompactionWALEventChSize:      conf.DefaultWALEventBufferSize,
+			CompactionWALWriterBufferSize: conf.DefaultWriterBufferSize,
+			Level0MaxSizeInBytes:          1024 * 2,
+			MaxSizeInBytesGrowthFactor:    2,
+		},
+	)
 
 	d := types.IntValue{V: 0}
 
@@ -120,9 +131,13 @@ func BenchmarkMemtable_Write_With_WAL(t *testing.B) {
 		mf,
 		ctx,
 		memtable.MemtableOpts{
-			MemtableSoftLimit: MEMTABLE_THRESHOLD,
-			LogDir:            temp,
-			TurnOnWal:         true,
+			MemtableSoftLimit:   MEMTABLE_THRESHOLD,
+			TurnOnWal:           true,
+			WALLogDir:           temp,
+			WALTimeInterval:     conf.DefaultWALTimeInterval,
+			WALEventChSize:      conf.DefaultWALEventBufferSize,
+			WALWriterBufferSize: conf.DefaultWALEventBufferSize,
+			FlushTimeInterval:   1000 * time.Millisecond,
 		})
 	d := types.IntValue{V: 0}
 
@@ -167,8 +182,8 @@ func BenchmarkMemtable_Write_Without_WAL(t *testing.B) {
 		ctx,
 		memtable.MemtableOpts{
 			MemtableSoftLimit: MEMTABLE_THRESHOLD,
-			LogDir:            temp,
 			TurnOnWal:         false,
+			FlushTimeInterval: 1000 * time.Millisecond,
 		})
 	d := types.IntValue{V: 0}
 

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nagarajRPoojari/orange/parrot/conf"
 	"github.com/nagarajRPoojari/orange/parrot/memtable"
 	"github.com/nagarajRPoojari/orange/parrot/metadata"
 	"github.com/nagarajRPoojari/orange/parrot/types"
@@ -30,7 +31,7 @@ func TestMemtable_Write_And_Read_In_Mem(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.StringKey, *types.StringValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: 1024, QueueHardLimit: 10},
+		memtable.MemtableOpts{MemtableSoftLimit: 1024, QueueHardLimit: 10, FlushTimeInterval: 1000 * time.Millisecond},
 	)
 	k, v := types.StringKey{K: "key-0"}, types.StringValue{V: "val-0"}
 	mts.Write(k, &v)
@@ -57,7 +58,7 @@ func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: 1024},
+		memtable.MemtableOpts{MemtableSoftLimit: 1024, FlushTimeInterval: 1000 * time.Millisecond},
 	)
 	d := types.IntValue{V: 0}
 
@@ -106,7 +107,7 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
+		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: 1000 * time.Millisecond},
 	)
 
 	// Perform enough writes to trigger approximately 2 memtable flushes.
@@ -173,7 +174,7 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
+		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: 1000 * time.Millisecond},
 	)
 	d := types.IntValue{V: 0}
 
@@ -236,9 +237,13 @@ func TestMemtable_Rollback(t *testing.T) {
 		mf,
 		ctx,
 		memtable.MemtableOpts{
-			MemtableSoftLimit: MEMTABLE_THRESHOLD,
-			LogDir:            temp,
-			TurnOnWal:         true,
+			MemtableSoftLimit:   MEMTABLE_THRESHOLD,
+			WALLogDir:           temp,
+			TurnOnWal:           true,
+			WALTimeInterval:     conf.DefaultWALTimeInterval,
+			WALEventChSize:      conf.DefaultWALEventBufferSize,
+			WALWriterBufferSize: conf.DefaultWriterBufferSize,
+			FlushTimeInterval:   1000 * time.Millisecond,
 		},
 	)
 
@@ -296,9 +301,13 @@ func TestMemtable_Delete_In_Memory(t *testing.T) {
 		mf,
 		ctx,
 		memtable.MemtableOpts{
-			MemtableSoftLimit: MEMTABLE_THRESHOLD,
-			LogDir:            temp,
-			TurnOnWal:         true,
+			MemtableSoftLimit:   MEMTABLE_THRESHOLD,
+			WALLogDir:           temp,
+			TurnOnWal:           true,
+			WALTimeInterval:     conf.DefaultWALTimeInterval,
+			WALEventChSize:      conf.DefaultWALEventBufferSize,
+			WALWriterBufferSize: conf.DefaultWriterBufferSize,
+			FlushTimeInterval:   1000 * time.Millisecond,
 		},
 	)
 
@@ -361,7 +370,7 @@ func TestMemtable_Delete_On_Disk(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
+		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: 1000 * time.Millisecond},
 	)
 	d := types.IntValue{V: 0}
 

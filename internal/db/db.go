@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/nagarajRPoojari/orange/internal/errors"
 	"github.com/nagarajRPoojari/orange/internal/query"
 	"github.com/nagarajRPoojari/orange/internal/schema"
 	"github.com/nagarajRPoojari/orange/internal/types"
 	storage "github.com/nagarajRPoojari/orange/parrot"
+	"github.com/nagarajRPoojari/orange/parrot/conf"
 )
 
 // InternalValueType wraps map[string]interface{} from query
@@ -107,12 +109,20 @@ func (t *Oragedb) createDB(dbName string) *storage.Storage[types.ID, *InternalVa
 		dbName,
 		t.context,
 		storage.StorageOpts{
-			Directory:         t.opts.Dir,
-			MemtableThreshold: MEMTABLE_THRESHOLD,
-			WalLogDir:         path.Join(t.opts.Dir, dbName),
-			GCLogDir:          path.Join(t.opts.Dir, dbName),
-			TurnOnCompaction:  false,
-			TurnOnWal:         true,
+			Directory: t.opts.Dir,
+
+			TurnOnMemtableWal:           true,
+			MemtableThreshold:           MEMTABLE_THRESHOLD,
+			MemtableWALTimeInterval:     conf.DefaultWALTimeInterval,
+			MemtableWALEventChSize:      conf.DefaultWALEventBufferSize,
+			MemtableWALWriterBufferSize: conf.DefaultWriterBufferSize,
+			FlushTimeInterval:           1000 * time.Millisecond,
+
+			TurnOnCompaction:              true,
+			CompactionTimeInterval:        1000 * time.Millisecond,
+			CompactionWALTimeInterval:     conf.DefaultWALTimeInterval,
+			CompactionWALEventChSize:      conf.DefaultWALEventBufferSize,
+			CompactionWALWriterBufferSize: conf.DefaultWriterBufferSize,
 		})
 
 	return db

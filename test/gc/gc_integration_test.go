@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nagarajRPoojari/orange/parrot/compactor"
+	"github.com/nagarajRPoojari/orange/parrot/conf"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/stretchr/testify/assert"
 
@@ -42,7 +43,11 @@ func TestGC(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: 1024},
+		memtable.MemtableOpts{
+			MemtableSoftLimit: 1024,
+			FlushTimeInterval: 1000 * time.Millisecond,
+			TurnOnWal:         false,
+		},
 	)
 	d := types.IntValue{V: 0}
 
@@ -55,7 +60,13 @@ func TestGC(t *testing.T) {
 				MaxSizeInBytesGrowthFactor: 10,
 			},
 		},
-		tempDir,
+		compactor.GCOpts{
+			WALLogDir:           tempDir,
+			TimeInterval:        1000 * time.Millisecond,
+			WALTimeInterval:     conf.DefaultWALEventBufferSize,
+			WALEventChSize:      conf.DefaultWALEventBufferSize,
+			WALWriterBufferSize: conf.DefaultWALEventBufferSize,
+		},
 	)
 	go gc.Run(ctx)
 
@@ -102,7 +113,10 @@ func TestGC_Intensive(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD},
+		memtable.MemtableOpts{
+			MemtableSoftLimit: MEMTABLE_THRESHOLD,
+			FlushTimeInterval: 1000 * time.Millisecond,
+		},
 	)
 	d := types.IntValue{V: 0}
 
@@ -115,7 +129,13 @@ func TestGC_Intensive(t *testing.T) {
 				MaxSizeInBytesGrowthFactor: 2,                      // growth_factor = 2
 			},
 		},
-		tempDir,
+		compactor.GCOpts{
+			WALLogDir:           tempDir,
+			TimeInterval:        1000 * time.Millisecond,
+			WALTimeInterval:     conf.DefaultWALEventBufferSize,
+			WALEventChSize:      conf.DefaultWALEventBufferSize,
+			WALWriterBufferSize: conf.DefaultWALEventBufferSize,
+		},
 	)
 	go gc.Run(ctx)
 
