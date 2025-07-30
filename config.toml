@@ -1,0 +1,20 @@
+directory = "./temp"
+
+[memtable]
+threshold = 2048  # 2kb
+queue_hard_limit = 10
+queue_soft_limit = 6
+flush_time_interval = "1s"
+turn_on_wal = true
+wal_time_interval = "1s"
+wal_event_ch_size = 1024
+wal_writer_buffer_size = 8192
+
+[compaction]
+turn_on = true
+level0_max_size_in_bytes = 2048  # 2kb
+max_size_growth_factor = 10
+time_interval = "1s"
+wal_time_interval = "1s"
+wal_event_ch_size = 512
+wal_writer_buffer_size = 4096

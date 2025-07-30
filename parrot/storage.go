@@ -8,6 +8,8 @@ package storage
 
 import (
 	"context"
+	"path/filepath"
+	"time"
 
 	v2 "github.com/nagarajRPoojari/orange/parrot/cache/v2"
 	"github.com/nagarajRPoojari/orange/parrot/compactor"
@@ -29,18 +31,37 @@ type StorageOpts struct {
 	QueueHardLimit int
 	// Soft limit to trigger proactive flushing before hitting the hard limit
 	QueueSoftLimit int
+	// Flusher time interval
+	FlushTimeInterval time.Duration
+	// Enables WAL for durability of writes
+	TurnOnMemtableWal bool
+	// Write-Ahead Log configuration
+	MemtableWALTimeInterval time.Duration
+	// event channel size
+	MemtableWALEventChSize int32
+	// writer buffer size
+	MemtableWALWriterBufferSize int
+	// Directory path where WAL files will be stored
+	MemtableWALLogDir string
 
 	// Compaction configuration
 	// Enables background compaction and garbage collection
 	TurnOnCompaction bool
+	// Soft size limit for level 0 (in bytes)
+	Level0MaxSizeInBytes int64
+	// Growth factor used to compute soft size limits for higher levels.
+	// For level x: maxSize = Level0MaxSizeInBytes * max(x * growthFactor, 1)
+	MaxSizeInBytesGrowthFactor int32
+	// compaction time interval
+	CompactionTimeInterval time.Duration
+	// wal time interval
+	CompactionWALTimeInterval time.Duration
+	// event channel size
+	CompactionWALEventChSize int32
+	// writer buffer size
+	CompactionWALWriterBufferSize int
 	// Directory to store compaction-related WALs or logs
-	GCLogDir string
-
-	// Write-Ahead Log configuration
-	// Enables WAL for durability of writes
-	TurnOnWal bool
-	// Directory to store WAL files
-	WalLogDir string
+	compactionWALLogDir string
 }
 
 type Storage[K types.Key, V types.Value] struct {
@@ -54,27 +75,33 @@ type Storage[K types.Key, V types.Value] struct {
 	// context for smooth teardown
 	context context.Context
 
-	opts StorageOpts
+	opts *StorageOpts
 }
 
 func NewStorage[K types.Key, V types.Value](name string, ctx context.Context, opts StorageOpts) *Storage[K, V] {
-	v := &Storage[K, V]{name: name, context: ctx, opts: opts}
+	opts.compactionWALLogDir = filepath.Join(opts.Directory, "gc")
+	opts.MemtableWALLogDir = filepath.Join(opts.Directory, "wal")
+	v := &Storage[K, V]{name: name, context: ctx, opts: &opts}
 	v.createOrLoadCollection()
 	v.reader = NewReader(v.store, ReaderOpts{})
 	v.writer = NewWriter(v.store, WriterOpts{})
 
 	if opts.TurnOnCompaction {
-
 		gc := compactor.NewGC(
 			v.manifest,
 			(*v2.CacheManager[K, V])(v.store.DecoderCache),
 			&compactor.SizeTiredCompaction[K, V]{
 				Opts: compactor.SizeTiredCompactionOpts{
-					Level0MaxSizeInBytes:       1024 * 2,
-					MaxSizeInBytesGrowthFactor: 2,
+					Level0MaxSizeInBytes:       opts.Level0MaxSizeInBytes,
+					MaxSizeInBytesGrowthFactor: opts.MaxSizeInBytesGrowthFactor,
 				},
 			},
-			opts.GCLogDir,
+			compactor.GCOpts{
+				TimeInterval:        opts.CompactionTimeInterval,
+				WALTimeInterval:     opts.CompactionWALTimeInterval,
+				WALEventChSize:      opts.CompactionWALEventChSize,
+				WALWriterBufferSize: opts.CompactionWALWriterBufferSize,
+			},
 		)
 		go gc.Run(ctx)
 	}
@@ -92,11 +119,15 @@ func (t *Storage[K, V]) createOrLoadCollection() {
 		mf,
 		t.context,
 		memtable.MemtableOpts{
-			MemtableSoftLimit: int64(t.opts.MemtableThreshold),
-			QueueHardLimit:    t.opts.QueueHardLimit,
-			QueueSoftLimit:    t.opts.QueueSoftLimit,
-			LogDir:            t.opts.WalLogDir,
-			TurnOnWal:         t.opts.TurnOnWal,
+			MemtableSoftLimit:   int64(t.opts.MemtableThreshold),
+			QueueHardLimit:      t.opts.QueueHardLimit,
+			QueueSoftLimit:      t.opts.QueueSoftLimit,
+			WALLogDir:           t.opts.MemtableWALLogDir,
+			WALTimeInterval:     t.opts.MemtableWALTimeInterval,
+			WALEventChSize:      t.opts.MemtableWALEventChSize,
+			WALWriterBufferSize: t.opts.MemtableWALWriterBufferSize,
+			TurnOnWal:           t.opts.TurnOnMemtableWal,
+			FlushTimeInterval:   t.opts.FlushTimeInterval,
 		})
 	t.store = mt
 	t.manifest = mf
@@ -128,10 +159,7 @@ type Reader[K types.Key, V types.Value] struct {
 	opts ReaderOpts
 }
 
-func NewReader[K types.Key, V types.Value](
-	store *memtable.MemtableStore[K, V],
-	opts ReaderOpts,
-) *Reader[K, V] {
+func NewReader[K types.Key, V types.Value](store *memtable.MemtableStore[K, V], opts ReaderOpts) *Reader[K, V] {
 	r := &Reader[K, V]{
 		store: store,
 		opts:  opts,
@@ -163,10 +191,7 @@ type Writer[K types.Key, V types.Value] struct {
 	opts WriterOpts
 }
 
-func NewWriter[K types.Key, V types.Value](
-	store *memtable.MemtableStore[K, V],
-	opts WriterOpts,
-) *Writer[K, V] {
+func NewWriter[K types.Key, V types.Value](store *memtable.MemtableStore[K, V], opts WriterOpts) *Writer[K, V] {
 	r := &Writer[K, V]{
 		store: store,
 		opts:  opts,

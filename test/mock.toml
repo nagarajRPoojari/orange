@@ -1,0 +1,20 @@
+directory = "/var/data/mydb"
+
+[memtable]
+threshold = 10485760  # 10 MB
+queue_hard_limit = 10
+queue_soft_limit = 6
+flush_time_interval = "5s"
+turn_on_wal = true
+wal_time_interval = "2s"
+wal_event_ch_size = 1024
+wal_writer_buffer_size = 8192
+
+[compaction]
+turn_on = true
+level0_max_size_in_bytes = 134217728  # 128 MB
+max_size_growth_factor = 10
+time_interval = "30s"
+wal_time_interval = "3s"
+wal_event_ch_size = 512
+wal_writer_buffer_size = 4096

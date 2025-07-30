@@ -12,6 +12,7 @@ import (
 	"time"
 
 	parrot "github.com/nagarajRPoojari/orange/parrot"
+	"github.com/nagarajRPoojari/orange/parrot/conf"
 	"github.com/nagarajRPoojari/orange/parrot/types"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -36,11 +37,20 @@ func TestStorage_Get_Put(t *testing.T) {
 		dbName,
 		ctx,
 		parrot.StorageOpts{
-			Directory:         dir,
-			MemtableThreshold: MEMTABLE_THRESHOLD,
-			TurnOnCompaction:  true,
-			TurnOnWal:         true,
-			GCLogDir:          dir,
+			Directory:                     dir,
+			MemtableThreshold:             MEMTABLE_THRESHOLD,
+			TurnOnMemtableWal:             true,
+			FlushTimeInterval:             conf.DefaultFlusherTimeInterval,
+			MemtableWALTimeInterval:       conf.DefaultWALTimeInterval,
+			MemtableWALEventChSize:        conf.DefaultWALEventBufferSize,
+			MemtableWALWriterBufferSize:   conf.DefaultWALEventBufferSize,
+			TurnOnCompaction:              true,
+			CompactionTimeInterval:        conf.DefaultCompactionTimeInterval,
+			CompactionWALTimeInterval:     conf.DefaultWALTimeInterval,
+			CompactionWALEventChSize:      conf.DefaultWALEventBufferSize,
+			CompactionWALWriterBufferSize: conf.DefaultWriterBufferSize,
+			Level0MaxSizeInBytes:          1024 * 2,
+			MaxSizeInBytesGrowthFactor:    2,
 		})
 
 	k, v := types.IntKey{K: 278}, types.IntValue{V: int32(278)}
@@ -68,12 +78,22 @@ func TestStorage_Delete(t *testing.T) {
 		dbName,
 		ctx,
 		parrot.StorageOpts{
-			Directory:         dir,
-			MemtableThreshold: MEMTABLE_THRESHOLD,
-			TurnOnCompaction:  true,
-			TurnOnWal:         true,
-			GCLogDir:          dir,
-		})
+			Directory:                     dir,
+			MemtableThreshold:             MEMTABLE_THRESHOLD,
+			TurnOnMemtableWal:             true,
+			FlushTimeInterval:             conf.DefaultFlusherTimeInterval,
+			MemtableWALTimeInterval:       conf.DefaultWALTimeInterval,
+			MemtableWALEventChSize:        conf.DefaultWALEventBufferSize,
+			MemtableWALWriterBufferSize:   conf.DefaultWALEventBufferSize,
+			TurnOnCompaction:              true,
+			CompactionTimeInterval:        conf.DefaultCompactionTimeInterval,
+			CompactionWALTimeInterval:     conf.DefaultWALTimeInterval,
+			CompactionWALEventChSize:      conf.DefaultWALEventBufferSize,
+			CompactionWALWriterBufferSize: conf.DefaultWriterBufferSize,
+			Level0MaxSizeInBytes:          1024 * 2,
+			MaxSizeInBytesGrowthFactor:    2,
+		},
+	)
 
 	k, v := types.IntKey{K: 278}, types.IntValue{V: int32(278)}
 
@@ -108,12 +128,22 @@ func TestStorage_Load_DB(t *testing.T) {
 		dbName,
 		ctx,
 		parrot.StorageOpts{
-			Directory:         dir,
-			MemtableThreshold: MEMTABLE_THRESHOLD,
-			TurnOnCompaction:  true,
-			TurnOnWal:         true,
-			GCLogDir:          dir,
-		})
+			Directory:                     dir,
+			MemtableThreshold:             MEMTABLE_THRESHOLD,
+			TurnOnMemtableWal:             true,
+			FlushTimeInterval:             conf.DefaultFlusherTimeInterval,
+			MemtableWALTimeInterval:       conf.DefaultWALTimeInterval,
+			MemtableWALEventChSize:        conf.DefaultWALEventBufferSize,
+			MemtableWALWriterBufferSize:   conf.DefaultWALEventBufferSize,
+			TurnOnCompaction:              true,
+			CompactionTimeInterval:        conf.DefaultCompactionTimeInterval,
+			CompactionWALTimeInterval:     conf.DefaultWALTimeInterval,
+			CompactionWALEventChSize:      conf.DefaultWALEventBufferSize,
+			CompactionWALWriterBufferSize: conf.DefaultWriterBufferSize,
+			Level0MaxSizeInBytes:          1024 * 2,
+			MaxSizeInBytesGrowthFactor:    2,
+		},
+	)
 
 	k, v := types.IntKey{K: 278}, types.IntValue{V: int32(278)}
 
@@ -133,12 +163,22 @@ func TestStorage_Load_DB(t *testing.T) {
 		dbName,
 		ctx,
 		parrot.StorageOpts{
-			Directory:         dir,
-			MemtableThreshold: MEMTABLE_THRESHOLD,
-			TurnOnCompaction:  true,
-			TurnOnWal:         true,
-			GCLogDir:          dir,
-		})
+			Directory:                     dir,
+			MemtableThreshold:             MEMTABLE_THRESHOLD,
+			TurnOnMemtableWal:             true,
+			FlushTimeInterval:             conf.DefaultFlusherTimeInterval,
+			MemtableWALTimeInterval:       conf.DefaultWALTimeInterval,
+			MemtableWALEventChSize:        conf.DefaultWALEventBufferSize,
+			MemtableWALWriterBufferSize:   conf.DefaultWALEventBufferSize,
+			TurnOnCompaction:              true,
+			CompactionTimeInterval:        conf.DefaultCompactionTimeInterval,
+			CompactionWALTimeInterval:     conf.DefaultWALTimeInterval,
+			CompactionWALEventChSize:      conf.DefaultWALEventBufferSize,
+			CompactionWALWriterBufferSize: conf.DefaultWriterBufferSize,
+			Level0MaxSizeInBytes:          1024 * 2,
+			MaxSizeInBytesGrowthFactor:    2,
+		},
+	)
 
 	readRes := db2.Get(k)
 

@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nagarajRPoojari/orange/parrot/conf"
 	"github.com/nagarajRPoojari/orange/parrot/wal"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +26,14 @@ type event struct {
 
 func TestWAL_Write(t *testing.T) {
 	logFile := filepath.Join(t.TempDir(), "test.gob")
-	wal, err := wal.NewWAL[event](logFile)
+	wal, err := wal.NewWAL[event](
+		wal.WALOpts{
+			Path:             logFile,
+			TimeInterval:     conf.DefaultWALTimeInterval,
+			EventChSize:      conf.DefaultWALEventBufferSize,
+			WriterBufferSize: conf.DefaultWriterBufferSize,
+		},
+	)
 	assert.NoError(t, err)
 
 	testEvent := event{Data: "test data"}
@@ -34,6 +42,7 @@ func TestWAL_Write(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	data, err := os.ReadFile(logFile)
+	assert.NoError(t, err)
 
 	var decodedEvent event
 	err = gob.NewDecoder(bytes.NewReader(data)).Decode(&decodedEvent)
@@ -43,7 +52,14 @@ func TestWAL_Write(t *testing.T) {
 
 func TestWAL_Replay(t *testing.T) {
 	logFile := filepath.Join(t.TempDir(), "test.log")
-	wl, err := wal.NewWAL[event](logFile)
+	wl, err := wal.NewWAL[event](
+		wal.WALOpts{
+			Path:             logFile,
+			TimeInterval:     conf.DefaultWALTimeInterval,
+			EventChSize:      conf.DefaultWALEventBufferSize,
+			WriterBufferSize: conf.DefaultWriterBufferSize,
+		},
+	)
 	assert.NoError(t, err)
 
 	testEvents := []event{}

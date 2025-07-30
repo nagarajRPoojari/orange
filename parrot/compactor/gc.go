@@ -36,6 +36,19 @@ type Event struct {
 	Op   Operation
 }
 
+type GCOpts struct {
+	TimeInterval time.Duration
+
+	// wal time interval
+	WALTimeInterval time.Duration
+	// event channel size
+	WALEventChSize int32
+	// writer buffer size
+	WALWriterBufferSize int
+	// Directory path where WAL files will be stored
+	WALLogDir string
+}
+
 // GC handles garbage collection and compaction for the storage engine.
 // It reclaims space by merging or removing obsolete SSTables and log entries.
 type GC[K types.Key, V types.Value] struct {
@@ -49,18 +62,29 @@ type GC[K types.Key, V types.Value] struct {
 
 	// Write-Ahead Log used to persist compaction-related events
 	wal *wal.WAL[Event]
+
+	// opts
+	opts *GCOpts
 }
 
-func NewGC[K types.Key, V types.Value](mf *metadata.Manifest, cache *v2.CacheManager[K, V], strategy CompactionStrategy[K, V], logDir string) *GC[K, V] {
-	logPath := filepath.Join(logDir, "gc-wal.log")
-	wl, _ := wal.NewWAL[Event](logPath)
+func NewGC[K types.Key, V types.Value](mf *metadata.Manifest, cache *v2.CacheManager[K, V], strategy CompactionStrategy[K, V], opts GCOpts) *GC[K, V] {
+
+	logPath := filepath.Join(opts.WALLogDir, "gc-wal.log")
+	wl, _ := wal.NewWAL[Event](
+		wal.WALOpts{
+			Path:             logPath,
+			TimeInterval:     opts.WALTimeInterval,
+			EventChSize:      opts.WALEventChSize,
+			WriterBufferSize: opts.WALWriterBufferSize,
+		},
+	)
 
 	events, err := wal.Replay[Event](logPath)
 	if err == nil {
 		rollback(events)
 	}
 
-	gc := &GC[K, V]{mf, cache, strategy, wl}
+	gc := &GC[K, V]{mf, cache, strategy, wl, &opts}
 
 	return gc
 }
@@ -92,8 +116,7 @@ func rollback(events []Event) {
 }
 
 func (t *GC[K, V]) Run(ctx context.Context) {
-	// @todo: read from config
-	ticker := time.NewTicker(1000 * time.Millisecond)
+	ticker := time.NewTicker(t.opts.TimeInterval)
 	defer ticker.Stop()
 
 	for {
@@ -131,12 +154,7 @@ type SizeTiredCompaction[K types.Key, V types.Value] struct {
 	Opts SizeTiredCompactionOpts
 }
 
-func (t *SizeTiredCompaction[K, V]) Run(
-	mf *metadata.Manifest,
-	cache *v2.CacheManager[K, V],
-	wal *wal.WAL[Event],
-	l int,
-) {
+func (t *SizeTiredCompaction[K, V]) Run(mf *metadata.Manifest, cache *v2.CacheManager[K, V], wal *wal.WAL[Event], l int) {
 	levelL, err := mf.GetLSM().GetLevel(l)
 	if err != nil {
 		return
@@ -144,19 +162,8 @@ func (t *SizeTiredCompaction[K, V]) Run(
 
 	size := levelL.SizeInBytes.Load()
 	// check level-l overflow according to size tired compaction strategy
-	if int64(
-		size,
-	) > t.Opts.Level0MaxSizeInBytes*max(
-		int64(l)*int64(t.Opts.MaxSizeInBytesGrowthFactor),
-		1,
-	) {
-		log.Infof(
-			"Size(level=%d)=%d, growth_factor=%d, l0MaxSize=%d",
-			l,
-			size,
-			t.Opts.MaxSizeInBytesGrowthFactor,
-			t.Opts.MaxSizeInBytesGrowthFactor,
-		)
+	if int64(size) > t.Opts.Level0MaxSizeInBytes*max(int64(l)*int64(t.Opts.MaxSizeInBytesGrowthFactor), 1) {
+		log.Infof("Size(level=%d)=%d, growth_factor=%d, l0MaxSize=%d", l, size, t.Opts.MaxSizeInBytesGrowthFactor, t.Opts.MaxSizeInBytesGrowthFactor)
 		log.Infof("Compaction started on level ", l)
 
 		tablesCount := levelL.TablesCount()

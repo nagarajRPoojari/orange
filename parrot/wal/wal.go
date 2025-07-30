@@ -26,13 +26,22 @@ import (
 type Event interface {
 }
 
+type WALOpts struct {
+	// Path to the WAL file on disk
+	Path string
+	// time interval between two flush
+	TimeInterval time.Duration
+
+	// event channel size
+	EventChSize int32
+
+	// writer buffer size
+	WriterBufferSize int
+}
+
 // WAL implements a Write-Ahead Log to ensure durability of events.
 // It serializes events to disk before they are applied, allowing recovery after crashes.
 type WAL[E Event] struct {
-
-	// Path to the WAL file on disk
-	path string
-
 	// Channel for queuing events to be written asynchronously
 	eventCh chan E
 
@@ -47,22 +56,24 @@ type WAL[E Event] struct {
 	bufferedWriter *bufio.Writer
 
 	mu sync.Mutex
+
+	//opts
+	opts *WALOpts
 }
 
 // NewWAL returns new WAL instance
-func NewWAL[E Event](path string) (*WAL[E], error) {
-
+func NewWAL[E Event](opts WALOpts) (*WAL[E], error) {
 	fm := fio.GetFileManager()
-	fw := fm.OpenForAppend(path)
+	fw := fm.OpenForAppend(opts.Path)
 
-	bw := bufio.NewWriterSize(fw.GetFile(), 4*1024*1024)
+	bw := bufio.NewWriterSize(fw.GetFile(), opts.WriterBufferSize)
 	w := &WAL[E]{
 		fileWriter:     fw,
-		path:           path,
-		eventCh:        make(chan E, 1024),
+		eventCh:        make(chan E, opts.EventChSize),
 		closeCh:        make(chan struct{}),
 		encoder:        gob.NewEncoder(bw),
 		bufferedWriter: bw,
+		opts:           &opts,
 	}
 
 	w.wg.Add(1)
@@ -107,7 +118,7 @@ func (w *WAL[E]) Append(entry E) {
 }
 
 func (t *WAL[E]) run() {
-	flushTicker := time.NewTicker(100 * time.Microsecond)
+	flushTicker := time.NewTicker(t.opts.TimeInterval)
 	defer flushTicker.Stop()
 
 	for {
@@ -151,7 +162,7 @@ func (t *WAL[E]) Truncate() {
 
 func (t *WAL[E]) Delete() {
 	fm := fio.GetFileManager()
-	fm.Delete(t.path)
+	fm.Delete(t.opts.Path)
 }
 
 func (t *WAL[E]) drain() {

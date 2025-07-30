@@ -6,6 +6,7 @@ import (
 	"path"
 	"sync"
 
+	"github.com/nagarajRPoojari/orange/internal/config"
 	"github.com/nagarajRPoojari/orange/internal/errors"
 	"github.com/nagarajRPoojari/orange/internal/query"
 	"github.com/nagarajRPoojari/orange/internal/schema"
@@ -36,7 +37,6 @@ func (t *InternalValueType) IsDeleted() bool {
 }
 
 type DBopts struct {
-	Dir string
 }
 
 // Oragedb represents the core database engine, holding the schema
@@ -49,21 +49,21 @@ type Oragedb struct {
 	// context for smooth teardown
 	context context.Context
 
-	opts *DBopts
+	conf config.Config
 }
 
 // NewOrangedb initializes the Oragedb instance with schema and config setup
-func NewOrangedb(context context.Context, opts DBopts) *Oragedb {
+func NewOrangedb(context context.Context, conf config.Config) *Oragedb {
 
 	return &Oragedb{
 		schemaHandler: schema.NewSchemaHandler(
 			&schema.SchemaHandlerOpts{
-				Dir: path.Join(opts.Dir, "catalog"),
+				Dir: path.Join(conf.Directory, "catalog"),
 			},
 		),
 		context: context,
 		dbMap:   &sync.Map{},
-		opts:    &opts,
+		conf:    conf,
 	}
 }
 
@@ -99,24 +99,27 @@ func (t *Oragedb) CreateCollection(op query.CreateOp) error {
 
 // createDB initializes a new parrot instance
 func (t *Oragedb) createDB(dbName string) *storage.Storage[types.ID, *InternalValueType] {
-
-	// @todo: read from config
-	const MEMTABLE_THRESHOLD = 1024 * 2
-
 	db := storage.NewStorage[types.ID, *InternalValueType](
 		dbName,
 		t.context,
 		storage.StorageOpts{
-			Directory:         t.opts.Dir,
-			MemtableThreshold: MEMTABLE_THRESHOLD,
-			WalLogDir:         path.Join(t.opts.Dir, dbName),
-			GCLogDir:          path.Join(t.opts.Dir, dbName),
-			TurnOnCompaction:  false,
-			TurnOnWal:         true,
+			Directory:                     path.Join(t.conf.Directory, dbName),
+			TurnOnMemtableWal:             t.conf.Memtable.TurnOnWAL,
+			MemtableThreshold:             t.conf.Memtable.Threshold,
+			MemtableWALTimeInterval:       t.conf.Memtable.WALTimeInterval,
+			MemtableWALEventChSize:        t.conf.Memtable.WALEventChSize,
+			MemtableWALWriterBufferSize:   t.conf.Memtable.WALWriterBufferSize,
+			FlushTimeInterval:             t.conf.Memtable.FlushTimeInterval,
+			TurnOnCompaction:              t.conf.Compaction.TurnOn,
+			CompactionTimeInterval:        t.conf.Compaction.TimeInterval,
+			CompactionWALTimeInterval:     t.conf.Compaction.WALTimeInterval,
+			CompactionWALEventChSize:      t.conf.Compaction.WALEventChSize,
+			CompactionWALWriterBufferSize: t.conf.Compaction.WALWriterBufferSize,
+			Level0MaxSizeInBytes:          t.conf.Compaction.Level0MaxSizeInBytes,
+			MaxSizeInBytesGrowthFactor:    t.conf.Compaction.MaxSizeInBytesGrowthFactor,
 		})
 
 	return db
-
 }
 
 // InsertDoc validates and inserts a document into the target collection.

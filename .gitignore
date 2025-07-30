@@ -5,6 +5,8 @@
 # Mac only
 .DS_Store/**
 
+*.json
+
 .venv
 *.log
 *.prof

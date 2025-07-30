@@ -42,18 +42,24 @@ type MemTableEvent[K types.Key, V types.Value] struct {
 type MemtableOpts struct {
 	// Maximum in-memory size of a memtable before it's marked for flushing (in bytes)
 	MemtableSoftLimit int64
-
 	// Maximum number of memtables allowed in the flush queue before producers are blocked
 	QueueHardLimit int
-
 	// Threshold for starting to flush memtables proactively to avoid hitting the hard limit
 	QueueSoftLimit int
 
 	// Enables write-ahead logging for durability
 	TurnOnWal bool
-
+	// wal time interval
+	WALTimeInterval time.Duration
+	// event channel size
+	WALEventChSize int32
+	// writer buffer size
+	WALWriterBufferSize int
 	// Directory path where WAL files will be stored
-	LogDir string
+	WALLogDir string
+
+	// Flusher time interval
+	FlushTimeInterval time.Duration
 }
 
 type Memtable[K types.Key, V types.Value] struct {
@@ -61,18 +67,25 @@ type Memtable[K types.Key, V types.Value] struct {
 
 	// RWMutex to prevent concurrent io
 	mu   *sync.RWMutex
-	opts MemtableOpts
+	opts *MemtableOpts
 	wal  *wal.WAL[MemTableEvent[K, V]]
 }
 
 // NewMemtable initializes a new Memtable instance.
 // If WAL is enabled via options, it also creates a new WAL file for durability.
-func NewMemtable[K types.Key, V types.Value](opts MemtableOpts) *Memtable[K, V] {
+func NewMemtable[K types.Key, V types.Value](opts *MemtableOpts) *Memtable[K, V] {
 	var wl *wal.WAL[MemTableEvent[K, V]]
 
 	if opts.TurnOnWal {
-		logPath := filepath.Join(opts.LogDir, fmt.Sprintf("wal-%d.log", time.Now().UnixNano()))
-		wl, _ = wal.NewWAL[MemTableEvent[K, V]](logPath)
+		logPath := filepath.Join(opts.WALLogDir, fmt.Sprintf("wal-%d.log", time.Now().UnixNano()))
+		wl, _ = wal.NewWAL[MemTableEvent[K, V]](
+			wal.WALOpts{
+				Path:             logPath,
+				TimeInterval:     opts.WALTimeInterval,
+				EventChSize:      opts.WALEventChSize,
+				WriterBufferSize: opts.WALWriterBufferSize,
+			},
+		)
 	}
 
 	return &Memtable[K, V]{
@@ -170,26 +183,26 @@ type MemtableStore[K types.Key, V types.Value] struct {
 	// Cache for decoded values to speed up reads
 	DecoderCache *v2.CacheManager[K, V]
 
-	opts MemtableOpts
+	opts *MemtableOpts
 }
 
 func NewMemtableStore[K types.Key, V types.Value](mf *metadata.Manifest, ctx context.Context, opts MemtableOpts) *MemtableStore[K, V] {
 	q := NewQueue[K, V](QueueOpts{HardLimit: opts.QueueHardLimit})
-	mem := NewMemtable[K, V](opts)
+	mem := NewMemtable[K, V](&opts)
 	node := NewNode(mem)
 
 	// make head node non-disposable
 	node.immutable.Lock()
 	q.Push(node)
 
-	flusher := NewFlusher(q, mf, FlusherOpts{})
+	flusher := NewFlusher(q, mf, FlusherOpts{TimeInterval: opts.FlushTimeInterval})
 	go flusher.Run(ctx)
 
 	memStore := &MemtableStore[K, V]{
 		mf:           mf,
 		q:            q,
 		mem:          mem,
-		opts:         opts,
+		opts:         &opts,
 		flusher:      flusher,
 		memNode:      node,
 		DecoderCache: v2.NewCacheManager[K, V](),
@@ -206,7 +219,7 @@ func (t *MemtableStore[K, V]) RollbackAll() error {
 	}
 
 	// List all WAL log files in the LogDir
-	files, err := filepath.Glob(filepath.Join(t.opts.LogDir, "*.log"))
+	files, err := filepath.Glob(filepath.Join(t.opts.WALLogDir, "*.log"))
 	if err != nil {
 		log.Infof("error listing WAL files: %v", err)
 		return err
