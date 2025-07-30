@@ -35,21 +35,20 @@ func NewCacheManager[K types.Key, V types.Value]() *CacheManager[K, V] {
 }
 
 // Get loads value for single key
-func (m *CacheManager[K, V]) Get(
-	dbPath string,
-	indexPath string,
-	key K,
-) (types.Payload[K, V], error) {
+func (m *CacheManager[K, V]) Get(dbPath string, indexPath string, key K) (types.Payload[K, V], error) {
 	val, loaded := m.cache.Load(dbPath)
+	var null types.Payload[K, V]
 	if loaded {
 		return val.(*CacheUnit[K, V]).GetDecodedForKey(key)
 	}
 
 	fm := fio.GetFileManager()
 	dbFileReader, err := fm.OpenForRead(dbPath)
+	if err != nil {
+		return null, err
+	}
 	indexFileReader, err := fm.OpenForRead(indexPath)
 	if err != nil {
-		var null types.Payload[K, V]
 		return null, err
 	}
 
@@ -66,10 +65,7 @@ func (m *CacheManager[K, V]) Get(
 }
 
 // GetFullPayload loads full payload list
-func (m *CacheManager[K, V]) GetFullPayload(
-	dbPath string,
-	indexPath string,
-) ([]types.Payload[K, V], error) {
+func (m *CacheManager[K, V]) GetFullPayload(dbPath string, indexPath string) ([]types.Payload[K, V], error) {
 
 	val, loaded := m.cache.Load(dbPath)
 	if loaded {
@@ -78,6 +74,9 @@ func (m *CacheManager[K, V]) GetFullPayload(
 
 	fm := fio.GetFileManager()
 	dbFileReader, err := fm.OpenForRead(dbPath)
+	if err != nil {
+		return nil, err
+	}
 	indexFileReader, err := fm.OpenForRead(indexPath)
 	if err != nil {
 		return nil, err
@@ -109,7 +108,6 @@ type CacheUnit[K types.Key, V types.Value] struct {
 
 	// decoded version of loaded payload
 	indexDecoded []utils.IndexPayload[K, V]
-	dbDecoded    []types.Payload[K, V]
 	err          error
 }
 
