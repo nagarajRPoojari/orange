@@ -263,7 +263,7 @@ func TestOrangedb_ProcessQuery(t *testing.T) {
 		`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`,
 	)
 	assert.NoError(t, err)
-INSERT VALUE INTO users {"_ID": 10, "name": "hello", "age": {"value": 90} }
+
 	for i := 1; i <= 100; i++ {
 		name := fmt.Sprintf("User%d", i)
 		age := i
