@@ -7,6 +7,7 @@
 package memtable_test
 
 import (
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -209,6 +210,7 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	}
 
 	wg.Wait()
+	os.RemoveAll(temp)
 }
 
 // TestMemtable_Rollback verifies memtable crash recovery
