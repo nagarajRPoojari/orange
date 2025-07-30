@@ -8,10 +8,10 @@ import (
 
 	"github.com/nagarajRPoojari/orange/internal/config"
 	"github.com/nagarajRPoojari/orange/internal/errors"
-	"github.com/nagarajRPoojari/orange/internal/query"
-	"github.com/nagarajRPoojari/orange/internal/schema"
 	"github.com/nagarajRPoojari/orange/internal/types"
 	storage "github.com/nagarajRPoojari/orange/parrot"
+	"github.com/nagarajRPoojari/orange/pkg/query"
+	"github.com/nagarajRPoojari/orange/pkg/schema"
 )
 
 // InternalValueType wraps map[string]interface{} from query
@@ -68,6 +68,8 @@ func NewOrangedb(context context.Context, conf config.Config) *Oragedb {
 }
 
 // ProcessQuery parses and routes a query to the appropriate database operation
+// ProcessQuery is depricated and will be moved out of db.go
+// Orangedb doesn't directly accepts query string, should be parsed outside & passed query.Op
 func (t *Oragedb) ProcessQuery(q string) (any, error) {
 	parser := query.NewParser(q)
 	op, err := parser.Build()
@@ -86,7 +88,7 @@ func (t *Oragedb) ProcessQuery(q string) (any, error) {
 		return nil, t.DeleteDoc(v)
 	}
 
-	return nil, errors.SQLSyntaxError("invalid op")
+	return nil, fmt.Errorf("syntax error: invalid op")
 }
 
 // CreateCollection creates a new collection and stores its schema in the catalog

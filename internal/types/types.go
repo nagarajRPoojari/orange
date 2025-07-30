@@ -165,7 +165,7 @@ func toid(v interface{}) (int64, error) {
 	case float64:
 		return int64(val), nil
 	default:
-		return 0, errors.TypeCastError("expected int64-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected int64-compatible value, got %T", v)
 	}
 }
 
@@ -182,7 +182,7 @@ func toint64(v interface{}) (int64, error) {
 	case float64:
 		return int64(val), nil
 	default:
-		return 0, errors.TypeCastError("expected int64-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected int64-compatible value, got %T", v)
 	}
 }
 
@@ -193,7 +193,7 @@ func toint(v interface{}) (int, error) {
 	case float64:
 		return int(val), nil
 	default:
-		return 0, errors.TypeCastError("expected int-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected int-compatible value, got %T", v)
 	}
 }
 
@@ -213,7 +213,7 @@ func todate(v interface{}) (time.Time, error) {
 				return t, nil
 			}
 		}
-		return time.Time{}, errors.TypeCastError("unable to parse string to time: %q", val)
+		return time.Time{}, errors.RaiseTypeCastErr("unable to parse string to time: %q", val)
 	case float64:
 		// Assume it's a Unix timestamp in seconds
 		return time.Unix(int64(val), 0), nil
@@ -235,7 +235,7 @@ func toint32(v interface{}) (int32, error) {
 	case float64:
 		return int32(val), nil
 	default:
-		return 0, errors.TypeCastError("expected int32-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected int32-compatible value, got %T", v)
 	}
 }
 
@@ -245,16 +245,16 @@ func toint16(v interface{}) (int16, error) {
 		return val, nil
 	case int:
 		if val < -32768 || val > 32767 {
-			return 0, errors.TypeCastError("int value %d out of int16 range", val)
+			return 0, errors.RaiseTypeCastErr("int value %d out of int16 range", val)
 		}
 		return int16(val), nil
 	case float64:
 		if val < -32768 || val > 32767 {
-			return 0, errors.TypeCastError("float64 value %f out of int16 range", val)
+			return 0, errors.RaiseTypeCastErr("float64 value %f out of int16 range", val)
 		}
 		return int16(val), nil
 	default:
-		return 0, errors.TypeCastError("expected int16-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected int16-compatible value, got %T", v)
 	}
 }
 
@@ -264,16 +264,16 @@ func toint8(v interface{}) (int8, error) {
 		return val, nil
 	case int:
 		if val < -128 || val > 127 {
-			return 0, errors.TypeCastError("int value %d out of int8 range", val)
+			return 0, errors.RaiseTypeCastErr("int value %d out of int8 range", val)
 		}
 		return int8(val), nil
 	case float64:
 		if val < -128 || val > 127 {
-			return 0, errors.TypeCastError("float64 value %f out of int8 range", val)
+			return 0, errors.RaiseTypeCastErr("float64 value %f out of int8 range", val)
 		}
 		return int8(val), nil
 	default:
-		return 0, errors.TypeCastError("expected int8-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected int8-compatible value, got %T", v)
 	}
 }
 
@@ -286,7 +286,7 @@ func tofloat64(v interface{}) (float64, error) {
 	case int:
 		return float64(val), nil
 	default:
-		return 0, errors.TypeCastError("expected float64-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected float64-compatible value, got %T", v)
 	}
 }
 func tofloat(v interface{}) (float64, error) {
@@ -298,7 +298,7 @@ func tofloat(v interface{}) (float64, error) {
 	case int:
 		return float64(val), nil
 	default:
-		return 0, errors.TypeCastError("expected float64-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected float64-compatible value, got %T", v)
 	}
 }
 
@@ -309,7 +309,7 @@ func tofloat32(v interface{}) (float32, error) {
 	case int:
 		return float32(val), nil
 	default:
-		return 0, errors.TypeCastError("expected float32-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected float32-compatible value, got %T", v)
 	}
 }
 
@@ -353,7 +353,7 @@ func tobool(v interface{}) (bool, error) {
 			return false, nil
 		}
 	}
-	return false, errors.TypeCastError("expected bool-compatible value, got %T", v)
+	return false, errors.RaiseTypeCastErr("expected bool-compatible value, got %T", v)
 }
 
 func tobyte(v interface{}) (byte, error) {
@@ -436,7 +436,7 @@ func tostring(v interface{}) (string, error) {
 	case []byte:
 		return string(val), nil
 	default:
-		return "", errors.TypeCastError("expected string-compatible value, got %T", v)
+		return "", errors.RaiseTypeCastErr("expected string-compatible value, got %T", v)
 	}
 }
 
@@ -456,9 +456,9 @@ func totime(v interface{}) (time.Time, error) {
 				return t, nil
 			}
 		}
-		return time.Time{}, errors.TypeCastError("cannot parse time string: %s", val)
+		return time.Time{}, errors.RaiseTypeCastErr("cannot parse time string: %s", val)
 	default:
-		return time.Time{}, errors.TypeCastError("expected time-compatible value, got %T", v)
+		return time.Time{}, errors.RaiseTypeCastErr("expected time-compatible value, got %T", v)
 	}
 }
 
@@ -479,7 +479,7 @@ func todatetime(v interface{}) (time.Time, error) {
 				return t, nil
 			}
 		}
-		return time.Time{}, errors.TypeCastError("unable to parse string to datetime: %q", val)
+		return time.Time{}, errors.RaiseTypeCastErr("unable to parse string to datetime: %q", val)
 	case float64:
 		return time.Unix(int64(val), 0), nil
 	case int64:
@@ -487,7 +487,7 @@ func todatetime(v interface{}) (time.Time, error) {
 	case int:
 		return time.Unix(int64(val), 0), nil
 	default:
-		return time.Time{}, errors.TypeCastError("expected datetime-compatible value, got %T", v)
+		return time.Time{}, errors.RaiseTypeCastErr("expected datetime-compatible value, got %T", v)
 	}
 }
 
@@ -499,7 +499,7 @@ func totimestamp(v interface{}) (int64, error) {
 	case string:
 		t, err := todatetime(val)
 		if err != nil {
-			return 0, errors.TypeCastError("cannot convert string to timestamp: %v", err)
+			return 0, errors.RaiseTypeCastErr("cannot convert string to timestamp: %v", err)
 		}
 		return t.Unix(), nil
 	case float64:
@@ -509,7 +509,7 @@ func totimestamp(v interface{}) (int64, error) {
 	case int:
 		return int64(val), nil
 	default:
-		return 0, errors.TypeCastError("expected timestamp-compatible value, got %T", v)
+		return 0, errors.RaiseTypeCastErr("expected timestamp-compatible value, got %T", v)
 	}
 }
 

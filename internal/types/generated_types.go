@@ -4,60 +4,61 @@ package types
 import "github.com/nagarajRPoojari/orange/internal/errors"
 
 var AllTypes = map[string]struct{}{
-	"INT": {},
-	"INT64": {},
-	"INT32": {},
-	"INT16": {},
-	"INT8": {},
-	"FLOAT": {},
-	"FLOAT32": {},
-	"FLOAT64": {},
-	"BOOL": {},
-	"STRING": {},
-	"DATE": {},
-	"TIME": {},
-	"DATETIME": {},
+	"INT":       {},
+	"INT64":     {},
+	"INT32":     {},
+	"INT16":     {},
+	"INT8":      {},
+	"FLOAT":     {},
+	"FLOAT32":   {},
+	"FLOAT64":   {},
+	"BOOL":      {},
+	"STRING":    {},
+	"DATE":      {},
+	"TIME":      {},
+	"DATETIME":  {},
 	"TIMESTAMP": {},
-	"DECIMAL": {},
-	"BYTE": {},
-	"ID": {},
+	"DECIMAL":   {},
+	"BYTE":      {},
+	"ID":        {},
 }
-func TypeCast(castTo string, val interface{}) (interface{}, error) { 
-switch castTo { 
- 	 case "INT": 
-	 	 return ToINT(val) 
- 	 case "INT64": 
-	 	 return ToINT64(val) 
- 	 case "INT32": 
-	 	 return ToINT32(val) 
- 	 case "INT16": 
-	 	 return ToINT16(val) 
- 	 case "INT8": 
-	 	 return ToINT8(val) 
- 	 case "FLOAT": 
-	 	 return ToFLOAT(val) 
- 	 case "FLOAT32": 
-	 	 return ToFLOAT32(val) 
- 	 case "FLOAT64": 
-	 	 return ToFLOAT64(val) 
- 	 case "BOOL": 
-	 	 return ToBOOL(val) 
- 	 case "STRING": 
-	 	 return ToSTRING(val) 
- 	 case "DATE": 
-	 	 return ToDATE(val) 
- 	 case "TIME": 
-	 	 return ToTIME(val) 
- 	 case "DATETIME": 
-	 	 return ToDATETIME(val) 
- 	 case "TIMESTAMP": 
-	 	 return ToTIMESTAMP(val) 
- 	 case "DECIMAL": 
-	 	 return ToDECIMAL(val) 
- 	 case "BYTE": 
-	 	 return ToBYTE(val) 
- 	 case "ID": 
-	 	 return ToID(val) 
+
+func TypeCast(castTo string, val interface{}) (interface{}, error) {
+	switch castTo {
+	case "INT":
+		return ToINT(val)
+	case "INT64":
+		return ToINT64(val)
+	case "INT32":
+		return ToINT32(val)
+	case "INT16":
+		return ToINT16(val)
+	case "INT8":
+		return ToINT8(val)
+	case "FLOAT":
+		return ToFLOAT(val)
+	case "FLOAT32":
+		return ToFLOAT32(val)
+	case "FLOAT64":
+		return ToFLOAT64(val)
+	case "BOOL":
+		return ToBOOL(val)
+	case "STRING":
+		return ToSTRING(val)
+	case "DATE":
+		return ToDATE(val)
+	case "TIME":
+		return ToTIME(val)
+	case "DATETIME":
+		return ToDATETIME(val)
+	case "TIMESTAMP":
+		return ToTIMESTAMP(val)
+	case "DECIMAL":
+		return ToDECIMAL(val)
+	case "BYTE":
+		return ToBYTE(val)
+	case "ID":
+		return ToID(val)
 	}
-return nil, errors.TypeCastError("type not found")
+	return nil, errors.TypeCastError("type not found")
 }

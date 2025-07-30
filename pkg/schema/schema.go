@@ -6,10 +6,10 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/nagarajRPoojari/orange/internal/errors"
-	"github.com/nagarajRPoojari/orange/internal/query"
 	"github.com/nagarajRPoojari/orange/internal/types"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
+	"github.com/nagarajRPoojari/orange/pkg/internal/errors"
+	"github.com/nagarajRPoojari/orange/pkg/query"
 )
 
 type SchemaHandlerOpts struct {
@@ -65,7 +65,7 @@ func loadSchemaId(schema query.Schema) (map[string]interface{}, error) {
 // recursiveSchemaVerifier recursively scans schema and validates give type
 // and ensures it is supported natively by parrot
 func recursiveSchemaVerifier(schema map[string]interface{}) error {
-	if schema == nil || len(schema) == 0 {
+	if len(schema) == 0 {
 		return errors.SchemaValidationError("missing data type")
 	}
 

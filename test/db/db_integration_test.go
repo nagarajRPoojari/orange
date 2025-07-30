@@ -11,8 +11,8 @@ import (
 
 	"github.com/nagarajRPoojari/orange/internal/config"
 	odb "github.com/nagarajRPoojari/orange/internal/db"
-	"github.com/nagarajRPoojari/orange/internal/query"
 	"github.com/nagarajRPoojari/orange/internal/types"
+	"github.com/nagarajRPoojari/orange/pkg/query"
 	"github.com/stretchr/testify/assert"
 )
 
