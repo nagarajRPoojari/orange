@@ -3,8 +3,8 @@ package schema_test
 import (
 	"testing"
 
-	"github.com/nagarajRPoojari/orange/internal/query"
-	"github.com/nagarajRPoojari/orange/internal/schema"
+	"github.com/nagarajRPoojari/orange/pkg/query"
+	"github.com/nagarajRPoojari/orange/pkg/schema"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nagarajRPoojari/orange/internal/query"
+	"github.com/nagarajRPoojari/orange/pkg/query"
 )
 
 func TestSchemaHandler_Verifier(t *testing.T) {

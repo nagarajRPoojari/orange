@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nagarajRPoojari/orange/internal/errors"
+	"github.com/nagarajRPoojari/orange/pkg/internal/errors"
 )
 
 type Parser struct {
@@ -38,7 +38,7 @@ func (t Parser) parse() (Query, error) {
 	case strings.HasPrefix(input, string(T_DELETE)):
 		return t.ParseDeleteQuery()
 	default:
-		return nil, errors.SQLSyntaxError("unsupported statement")
+		return nil, errors.OQLSyntaxError("unsupported statement")
 	}
 }
 
@@ -53,7 +53,7 @@ func extractOutermost(input string, startChar, endChar rune) (string, error) {
 	if len(match) > 1 {
 		return match[1], nil
 	}
-	return "", errors.SQLSyntaxError("failed to extract fields")
+	return "", errors.OQLSyntaxError("failed to extract fields")
 }
 
 // ParseCreateQuery parses a CREATE DOCUMENT query and returns a CreateOp.
@@ -94,14 +94,14 @@ func extractDocumentNameFromCreateQuery(input string) (string, error) {
 	if len(match) > 1 {
 		return match[1], nil
 	}
-	return "", errors.SQLSyntaxError("failed to extract document name")
+	return "", errors.OQLSyntaxError("failed to extract document name")
 }
 
 func unmarshallSchema(input JSONString) (Schema, error) {
 	var schema Schema
 	err := json.Unmarshal([]byte("{"+input+"}"), &schema)
 	if err != nil {
-		return nil, errors.SQLSyntaxError("invalid JSON schema: " + err.Error())
+		return nil, errors.OQLSyntaxError("invalid JSON schema: " + err.Error())
 	}
 	return schema, nil
 }
@@ -148,14 +148,14 @@ func extractDocumentNameFromInsertQuery(input string) (string, error) {
 	if len(match) > 1 {
 		return match[1], nil
 	}
-	return "", errors.SQLSyntaxError("failed to extract document name")
+	return "", errors.OQLSyntaxError("failed to extract document name")
 }
 
 func unmarshallValue(input JSONString) (Value, error) {
 	var schema Value
 	err := json.Unmarshal([]byte("{"+input+"}"), &schema)
 	if err != nil {
-		return nil, errors.SQLSyntaxError("invalid JSON schema: " + err.Error())
+		return nil, errors.OQLSyntaxError("invalid JSON schema: " + err.Error())
 	}
 	return schema, nil
 }
@@ -196,11 +196,11 @@ func extractID(input string) (int64, error) {
 		numStr := strings.TrimSpace(match[1])
 		num, err := strconv.ParseInt(numStr, 10, 64)
 		if err != nil {
-			return 0, errors.SQLSyntaxError("failed to parse _ID to int64")
+			return 0, errors.OQLSyntaxError("failed to parse _ID to int64")
 		}
 		return num, nil
 	}
-	return 0, errors.SQLSyntaxError("failed to extract _ID")
+	return 0, errors.OQLSyntaxError("failed to extract _ID")
 }
 
 func extractColumnNames(input string) []string {
@@ -224,7 +224,7 @@ func extractDocumentNameFromSelectQuery(input string) (string, error) {
 	if len(match) > 1 {
 		return match[1], nil
 	}
-	return "", errors.SQLSyntaxError("failed to extract document name")
+	return "", errors.OQLSyntaxError("failed to extract document name")
 }
 
 // ParseSelectQuery parses a DELETE query and returns a SelectOp.
@@ -257,5 +257,5 @@ func extractDocumentNameFromDeleteQuery(input string) (string, error) {
 	if len(match) > 1 {
 		return match[1], nil
 	}
-	return "", errors.SQLSyntaxError("failed to extract document name from DELETE query")
+	return "", errors.OQLSyntaxError("failed to extract document name from DELETE query")
 }
