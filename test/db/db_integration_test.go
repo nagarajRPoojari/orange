@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
+	"github.com/spf13/viper"
 
+	"github.com/nagarajRPoojari/orange/internal/config"
 	odb "github.com/nagarajRPoojari/orange/internal/db"
 	"github.com/nagarajRPoojari/orange/internal/query"
 	"github.com/nagarajRPoojari/orange/internal/types"
@@ -18,15 +20,32 @@ func init() {
 	log.Disable()
 }
 
+func getMockedConfig(dir string) config.Config {
+	viper.SetConfigName("mock")
+	viper.SetConfigType("toml")
+	viper.AddConfigPath("../")
+
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println(err)
+		log.Fatalf("Config error: %v", err)
+	}
+
+	var cfg config.Config
+	if err := viper.Unmarshal(&cfg); err != nil {
+		fmt.Println(err)
+		log.Fatalf("Unmarshal error: %v", err)
+	}
+
+	cfg.Directory = dir
+	return cfg
+}
+
 func TestOragedb_Init(t *testing.T) {
 	dir := t.TempDir()
 	db := odb.NewOrangedb(
 		t.Context(),
-		odb.DBopts{
-			Dir: dir,
-		},
+		getMockedConfig(dir),
 	)
-
 	assert.NotNil(t, db)
 }
 
@@ -34,9 +53,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	dir := t.TempDir()
 	db := odb.NewOrangedb(
 		t.Context(),
-		odb.DBopts{
-			Dir: dir,
-		},
+		getMockedConfig(dir),
 	)
 
 	assert.NotNil(t, db)
@@ -76,6 +93,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 			ID:       90102,
 		},
 	)
+	assert.NoError(t, err)
 
 	wanted := map[string]interface{}(
 		map[string]interface{}{
@@ -92,9 +110,7 @@ func TestOrangedb_DeleteDoc(t *testing.T) {
 	dir := t.TempDir()
 	db := odb.NewOrangedb(
 		t.Context(),
-		odb.DBopts{
-			Dir: dir,
-		},
+		getMockedConfig(dir),
 	)
 
 	assert.NotNil(t, db)
@@ -148,9 +164,7 @@ func TestOragedb_InsertDoc(t *testing.T) {
 	dir := t.TempDir()
 	db := odb.NewOrangedb(
 		t.Context(),
-		odb.DBopts{
-			Dir: dir,
-		},
+		getMockedConfig(dir),
 	)
 
 	assert.NotNil(t, db)
@@ -190,7 +204,7 @@ func TestOragedb_CreateCollection(t *testing.T) {
 	tempDir := t.TempDir()
 
 	type fields struct {
-		opts odb.DBopts
+		conf config.Config
 	}
 	type args struct {
 		op query.CreateOp
@@ -203,7 +217,7 @@ func TestOragedb_CreateCollection(t *testing.T) {
 	}{
 		{
 			name:   "valid collection schema",
-			fields: fields{opts: odb.DBopts{Dir: tempDir}},
+			fields: fields{conf: getMockedConfig(tempDir)},
 			args: args{
 				op: query.CreateOp{
 					Document: "test",
@@ -218,7 +232,7 @@ func TestOragedb_CreateCollection(t *testing.T) {
 		},
 		{
 			name:   "invalid collection schema",
-			fields: fields{opts: odb.DBopts{Dir: tempDir}},
+			fields: fields{conf: getMockedConfig(tempDir)},
 			args: args{
 				op: query.CreateOp{
 					Document: "test",
@@ -234,7 +248,7 @@ func TestOragedb_CreateCollection(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr := odb.NewOrangedb(t.Context(), tt.fields.opts)
+			tr := odb.NewOrangedb(t.Context(), tt.fields.conf)
 			err := tr.CreateCollection(tt.args.op)
 			assert.Equal(t, tt.wantErr, err != nil, "Oragedb.CreateCollection() error = %v", err)
 		})
@@ -244,12 +258,12 @@ func TestOragedb_CreateCollection(t *testing.T) {
 func TestOrangedb_ProcessQuery(t *testing.T) {
 	log.Disable()
 
-	db := odb.NewOrangedb(t.Context(), odb.DBopts{Dir: t.TempDir()})
+	db := odb.NewOrangedb(t.Context(), getMockedConfig(t.TempDir()))
 	_, err := db.ProcessQuery(
 		`CREATE DOCUMENT users { "_ID": {"auto_increment": false},"name": "STRING", "age": {"value": "INT64"} }`,
 	)
 	assert.NoError(t, err)
-
+INSERT VALUE INTO users {"_ID": 10, "name": "hello", "age": {"value": 90} }
 	for i := 1; i <= 100; i++ {
 		name := fmt.Sprintf("User%d", i)
 		age := i

@@ -171,7 +171,6 @@ func (t *FileManager) OpenForWrite(path string) *FileWriter {
 	if err != nil {
 		log.Fatalf("failed to open file for writing %v", err)
 	}
-
 	return &FileWriter{file: f}
 }
 

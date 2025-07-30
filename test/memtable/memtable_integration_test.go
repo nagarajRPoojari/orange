@@ -58,7 +58,7 @@ func TestMemtable_Write_Overflow_Trigger_Flush(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: 1024, FlushTimeInterval: 1000 * time.Millisecond},
+		memtable.MemtableOpts{MemtableSoftLimit: 1024, FlushTimeInterval: conf.DefaultFlusherTimeInterval},
 	)
 	d := types.IntValue{V: 0}
 
@@ -107,7 +107,7 @@ func TestMemtable_Write_With_Multiple_Reader(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: 1000 * time.Millisecond},
+		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: conf.DefaultFlusherTimeInterval},
 	)
 
 	// Perform enough writes to trigger approximately 2 memtable flushes.
@@ -174,7 +174,7 @@ func TestMemtable_Intensive_Write_And_Read(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: 1000 * time.Millisecond},
+		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: conf.DefaultFlusherTimeInterval},
 	)
 	d := types.IntValue{V: 0}
 
@@ -243,7 +243,7 @@ func TestMemtable_Rollback(t *testing.T) {
 			WALTimeInterval:     conf.DefaultWALTimeInterval,
 			WALEventChSize:      conf.DefaultWALEventBufferSize,
 			WALWriterBufferSize: conf.DefaultWriterBufferSize,
-			FlushTimeInterval:   1000 * time.Millisecond,
+			FlushTimeInterval:   conf.DefaultFlusherTimeInterval,
 		},
 	)
 
@@ -307,7 +307,7 @@ func TestMemtable_Delete_In_Memory(t *testing.T) {
 			WALTimeInterval:     conf.DefaultWALTimeInterval,
 			WALEventChSize:      conf.DefaultWALEventBufferSize,
 			WALWriterBufferSize: conf.DefaultWriterBufferSize,
-			FlushTimeInterval:   1000 * time.Millisecond,
+			FlushTimeInterval:   conf.DefaultFlusherTimeInterval,
 		},
 	)
 
@@ -370,7 +370,7 @@ func TestMemtable_Delete_On_Disk(t *testing.T) {
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
-		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: 1000 * time.Millisecond},
+		memtable.MemtableOpts{MemtableSoftLimit: MEMTABLE_THRESHOLD, FlushTimeInterval: conf.DefaultFlusherTimeInterval},
 	)
 	d := types.IntValue{V: 0}
 

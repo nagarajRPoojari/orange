@@ -81,14 +81,12 @@ type Storage[K types.Key, V types.Value] struct {
 func NewStorage[K types.Key, V types.Value](name string, ctx context.Context, opts StorageOpts) *Storage[K, V] {
 	opts.compactionWALLogDir = filepath.Join(opts.Directory, "gc")
 	opts.MemtableWALLogDir = filepath.Join(opts.Directory, "wal")
-
 	v := &Storage[K, V]{name: name, context: ctx, opts: &opts}
 	v.createOrLoadCollection()
 	v.reader = NewReader(v.store, ReaderOpts{})
 	v.writer = NewWriter(v.store, WriterOpts{})
 
 	if opts.TurnOnCompaction {
-
 		gc := compactor.NewGC(
 			v.manifest,
 			(*v2.CacheManager[K, V])(v.store.DecoderCache),

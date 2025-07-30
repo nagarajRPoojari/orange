@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nagarajRPoojari/orange/internal/config"
 	odb "github.com/nagarajRPoojari/orange/internal/db"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/spf13/cobra"
@@ -24,7 +25,7 @@ var replCmd = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		db := odb.NewOrangedb(ctx, odb.DBopts{Dir: "./temp"})
+		db := odb.NewOrangedb(ctx, config.GetConfig())
 		log.Disable()
 		for {
 			fmt.Print("> ")
