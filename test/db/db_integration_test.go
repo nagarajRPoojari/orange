@@ -84,7 +84,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 		},
 	)
 
-	assert.DirExists(t, path.Join(dir, "manifest"))
+	assert.DirExists(t, path.Join(dir, "test", "manifest"))
 	assert.NoError(t, err)
 
 	got, err := db.GetDoc(
@@ -140,7 +140,7 @@ func TestOrangedb_DeleteDoc(t *testing.T) {
 		},
 	)
 
-	assert.DirExists(t, path.Join(dir, "manifest"))
+	assert.DirExists(t, path.Join(dir, "test", "manifest"))
 	assert.NoError(t, err)
 
 	err = db.DeleteDoc(
@@ -195,7 +195,7 @@ func TestOragedb_InsertDoc(t *testing.T) {
 		},
 	)
 
-	assert.DirExists(t, path.Join(dir, "manifest"))
+	assert.DirExists(t, path.Join(dir, "test", "manifest"))
 	assert.NoError(t, err)
 }
 
