@@ -69,7 +69,7 @@ type ShardSpec struct {
 	Count int `json:"count"`
 
 	// Number of replicas per shard StatefulSet
-	Replicas int `json:"replicas"`
+	Replicas int32 `json:"replicas"`
 
 	// Port exposed by each shard container
 	Port int32 `json:"port"`

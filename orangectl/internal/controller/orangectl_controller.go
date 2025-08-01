@@ -114,7 +114,7 @@ func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ct
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  "router",
+							Name:  routerSpec.Name,
 							Image: routerSpec.Image,
 							Ports: []corev1.ContainerPort{
 								{
@@ -162,14 +162,89 @@ func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ct
 }
 
 func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) error {
-	for i := 0; i < orangeCtl.Spec.Shard.Count; i++ {
-		// shardName := fmt.Sprintf("%s-%d", orangeCtl.Spec.Shard.Name, i)
+	shardSpec := orangeCtl.Spec.Shard
+	namespace := orangeCtl.Spec.Namespace
 
-		// TODO: Create or patch StatefulSet named `shardName`
-		// Use shard image, replicas, port, config, etc.
-		// Make sure to set ownerReference to orangeCtl for GC
+	for i := 0; i < shardSpec.Count; i++ {
+		shardName := fmt.Sprintf("%s-%d", shardSpec.Name, i)
+
+		ss := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      shardName,
+				Namespace: namespace,
+			},
+		}
+
+		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, ss, func() error {
+			// Set labels, adding shard and orangeCtl labels
+			if ss.Labels == nil {
+				ss.Labels = map[string]string{}
+			}
+			for k, v := range shardSpec.Labels {
+				ss.Labels[k] = v
+			}
+			ss.Labels["orangectl"] = orangeCtl.Name
+			ss.Labels["shard"] = shardName
+
+			// StatefulSet spec
+			ss.Spec.ServiceName = shardName
+			ss.Spec.Replicas = pointer.Int32(shardSpec.Replicas)
+			ss.Spec.Selector = &metav1.LabelSelector{
+				MatchLabels: ss.Labels,
+			}
+			ss.Spec.Template = corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: ss.Labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "shard",
+							Image: shardSpec.Image,
+							Ports: []corev1.ContainerPort{
+								{
+									ContainerPort: shardSpec.Port,
+								},
+							},
+							Env: toEnvVars(shardSpec.Config),
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "data",
+									MountPath: "/app/data",
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "data",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						},
+					},
+				},
+			}
+
+			return controllerutil.SetControllerReference(orangeCtl, ss, r.Scheme)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create or update StatefulSet %s: %w", shardName, err)
+		}
 	}
+
 	return nil
+}
+
+func toEnvVars(config map[string]string) []corev1.EnvVar {
+	var envs []corev1.EnvVar
+	for k, v := range config {
+		envs = append(envs, corev1.EnvVar{
+			Name:  k,
+			Value: v,
+		})
+	}
+	return envs
 }
 
 // SetupWithManager sets up the controller with the Manager.
