@@ -9,6 +9,7 @@ import (
 	pb "github.com/nagarajRPoojari/orange/pkg/proto/ops"
 	"github.com/nagarajRPoojari/orange/pkg/query"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Client struct {
@@ -18,7 +19,7 @@ type Client struct {
 
 func NewClient() *Client {
 	addr := "localhost:50051"
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to dial to server at %s", addr)
 	}
