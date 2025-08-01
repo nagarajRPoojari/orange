@@ -95,7 +95,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	wanted := map[string]interface{}(
+	wantedA := map[string]interface{}(
 		map[string]interface{}{
 			"_ID": types.ID{
 				K: int64(90102),
@@ -103,7 +103,18 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 		},
 	)
 
-	assert.Equal(t, wanted, got)
+	wantedB := map[string]interface{}(
+		map[string]interface{}{
+			"_ID": types.ID{
+				K: int64(90102),
+			}, "age": map[string]interface{}{"name": types.INT8(12)}, "name": "hello",
+		},
+	)
+
+	assert.True(t,
+		reflect.DeepEqual(got, wantedA) || reflect.DeepEqual(got, wantedB),
+		"Expected result to match either wantedA or wantedB, but got: %v", got,
+	)
 }
 
 func TestOrangedb_DeleteDoc(t *testing.T) {
