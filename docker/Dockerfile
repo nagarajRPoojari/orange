@@ -15,7 +15,7 @@ ARG final_image=scratch
 # out the current base)
 #
 #           FROM golang:1.21-alpine as builder
-FROM golang:1.21 as builder
+FROM golang:1.24 as builder
 
 # Setup environmet variables - chores.
 ENV GO111MODULE=on \
@@ -43,11 +43,15 @@ RUN go build -v -o "../__orange_build_output__"
 # Second stage - `scratch` for production builds, `golang:1.21` for debug builds
 FROM ${final_image}
 
-WORKDIR "/builds"
+WORKDIR "/build"
+
 
 # Copy generated binary from previous image to this one - rename for readability
 COPY --from=builder "/src/__orange_build_output__" \
     "./orange"
+
+COPY --from=builder "/src/__orange__/config.toml" \
+    "./config.toml"
 
 # Set environment variables to distuinguish between build modes
 ARG build_mode=production
@@ -56,4 +60,4 @@ ENV ${build_mode}_mode=${build_mode}
 # ^^ will be `debug_mode` or `production_mode`
 
 # Run the binary
-CMD ["./orange"]
+CMD ["./orange", "server", "--port", "52001", "--address", "0.0.0.0"]
