@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package ops;
 import "google/protobuf/struct.proto";
-option go_package = "server/proto/ops";  
+option go_package = "pkg/proto/ops";  
 
-service Greeter {
+service Ops {
   rpc Create (CreateReq) returns (CreatRes);
   rpc Insert (InsertReq) returns (InsertRes);
   rpc Delete (DeleteReq) returns (DeleteRes);
@@ -18,7 +18,7 @@ message SelectReq {
 }
 
 message SelectRes {
-  google.protobuf.Struct data = 1;
+  bytes data = 1; // will be in json bytes
 }
 
 message InsertReq {

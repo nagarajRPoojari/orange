@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v5.29.3
-// source: server/proto/ops.proto
+// source: pkg/proto/ops.proto
 
 package ops
 
@@ -33,7 +33,7 @@ type SelectReq struct {
 
 func (x *SelectReq) Reset() {
 	*x = SelectReq{}
-	mi := &file_server_proto_ops_proto_msgTypes[0]
+	mi := &file_pkg_proto_ops_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *SelectReq) String() string {
 func (*SelectReq) ProtoMessage() {}
 
 func (x *SelectReq) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_ops_proto_msgTypes[0]
+	mi := &file_pkg_proto_ops_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *SelectReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SelectReq.ProtoReflect.Descriptor instead.
 func (*SelectReq) Descriptor() ([]byte, []int) {
-	return file_server_proto_ops_proto_rawDescGZIP(), []int{0}
+	return file_pkg_proto_ops_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SelectReq) GetDocument() string {
@@ -84,14 +84,14 @@ func (x *SelectReq) GetId() int64 {
 
 type SelectRes struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          *structpb.Struct       `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SelectRes) Reset() {
 	*x = SelectRes{}
-	mi := &file_server_proto_ops_proto_msgTypes[1]
+	mi := &file_pkg_proto_ops_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -103,7 +103,7 @@ func (x *SelectRes) String() string {
 func (*SelectRes) ProtoMessage() {}
 
 func (x *SelectRes) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_ops_proto_msgTypes[1]
+	mi := &file_pkg_proto_ops_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -116,10 +116,10 @@ func (x *SelectRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SelectRes.ProtoReflect.Descriptor instead.
 func (*SelectRes) Descriptor() ([]byte, []int) {
-	return file_server_proto_ops_proto_rawDescGZIP(), []int{1}
+	return file_pkg_proto_ops_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SelectRes) GetData() *structpb.Struct {
+func (x *SelectRes) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
@@ -136,7 +136,7 @@ type InsertReq struct {
 
 func (x *InsertReq) Reset() {
 	*x = InsertReq{}
-	mi := &file_server_proto_ops_proto_msgTypes[2]
+	mi := &file_pkg_proto_ops_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -148,7 +148,7 @@ func (x *InsertReq) String() string {
 func (*InsertReq) ProtoMessage() {}
 
 func (x *InsertReq) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_ops_proto_msgTypes[2]
+	mi := &file_pkg_proto_ops_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -161,7 +161,7 @@ func (x *InsertReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InsertReq.ProtoReflect.Descriptor instead.
 func (*InsertReq) Descriptor() ([]byte, []int) {
-	return file_server_proto_ops_proto_rawDescGZIP(), []int{2}
+	return file_pkg_proto_ops_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *InsertReq) GetDocument() string {
@@ -187,7 +187,7 @@ type InsertRes struct {
 
 func (x *InsertRes) Reset() {
 	*x = InsertRes{}
-	mi := &file_server_proto_ops_proto_msgTypes[3]
+	mi := &file_pkg_proto_ops_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -199,7 +199,7 @@ func (x *InsertRes) String() string {
 func (*InsertRes) ProtoMessage() {}
 
 func (x *InsertRes) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_ops_proto_msgTypes[3]
+	mi := &file_pkg_proto_ops_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -212,7 +212,7 @@ func (x *InsertRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InsertRes.ProtoReflect.Descriptor instead.
 func (*InsertRes) Descriptor() ([]byte, []int) {
-	return file_server_proto_ops_proto_rawDescGZIP(), []int{3}
+	return file_pkg_proto_ops_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *InsertRes) GetStatus() bool {
@@ -232,7 +232,7 @@ type CreateReq struct {
 
 func (x *CreateReq) Reset() {
 	*x = CreateReq{}
-	mi := &file_server_proto_ops_proto_msgTypes[4]
+	mi := &file_pkg_proto_ops_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -244,7 +244,7 @@ func (x *CreateReq) String() string {
 func (*CreateReq) ProtoMessage() {}
 
 func (x *CreateReq) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_ops_proto_msgTypes[4]
+	mi := &file_pkg_proto_ops_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -257,7 +257,7 @@ func (x *CreateReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateReq.ProtoReflect.Descriptor instead.
 func (*CreateReq) Descriptor() ([]byte, []int) {
-	return file_server_proto_ops_proto_rawDescGZIP(), []int{4}
+	return file_pkg_proto_ops_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateReq) GetDocument() string {
@@ -283,7 +283,7 @@ type CreatRes struct {
 
 func (x *CreatRes) Reset() {
 	*x = CreatRes{}
-	mi := &file_server_proto_ops_proto_msgTypes[5]
+	mi := &file_pkg_proto_ops_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -295,7 +295,7 @@ func (x *CreatRes) String() string {
 func (*CreatRes) ProtoMessage() {}
 
 func (x *CreatRes) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_ops_proto_msgTypes[5]
+	mi := &file_pkg_proto_ops_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -308,7 +308,7 @@ func (x *CreatRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatRes.ProtoReflect.Descriptor instead.
 func (*CreatRes) Descriptor() ([]byte, []int) {
-	return file_server_proto_ops_proto_rawDescGZIP(), []int{5}
+	return file_pkg_proto_ops_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreatRes) GetStatus() bool {
@@ -328,7 +328,7 @@ type DeleteReq struct {
 
 func (x *DeleteReq) Reset() {
 	*x = DeleteReq{}
-	mi := &file_server_proto_ops_proto_msgTypes[6]
+	mi := &file_pkg_proto_ops_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -340,7 +340,7 @@ func (x *DeleteReq) String() string {
 func (*DeleteReq) ProtoMessage() {}
 
 func (x *DeleteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_ops_proto_msgTypes[6]
+	mi := &file_pkg_proto_ops_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -353,7 +353,7 @@ func (x *DeleteReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteReq.ProtoReflect.Descriptor instead.
 func (*DeleteReq) Descriptor() ([]byte, []int) {
-	return file_server_proto_ops_proto_rawDescGZIP(), []int{6}
+	return file_pkg_proto_ops_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DeleteReq) GetDocument() string {
@@ -379,7 +379,7 @@ type DeleteRes struct {
 
 func (x *DeleteRes) Reset() {
 	*x = DeleteRes{}
-	mi := &file_server_proto_ops_proto_msgTypes[7]
+	mi := &file_pkg_proto_ops_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -391,7 +391,7 @@ func (x *DeleteRes) String() string {
 func (*DeleteRes) ProtoMessage() {}
 
 func (x *DeleteRes) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_ops_proto_msgTypes[7]
+	mi := &file_pkg_proto_ops_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -404,7 +404,7 @@ func (x *DeleteRes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRes.ProtoReflect.Descriptor instead.
 func (*DeleteRes) Descriptor() ([]byte, []int) {
-	return file_server_proto_ops_proto_rawDescGZIP(), []int{7}
+	return file_pkg_proto_ops_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeleteRes) GetStatus() bool {
@@ -414,17 +414,17 @@ func (x *DeleteRes) GetStatus() bool {
 	return false
 }
 
-var File_server_proto_ops_proto protoreflect.FileDescriptor
+var File_pkg_proto_ops_proto protoreflect.FileDescriptor
 
-const file_server_proto_ops_proto_rawDesc = "" +
+const file_pkg_proto_ops_proto_rawDesc = "" +
 	"\n" +
-	"\x16server/proto/ops.proto\x12\x03ops\x1a\x1cgoogle/protobuf/struct.proto\"Q\n" +
+	"\x13pkg/proto/ops.proto\x12\x03ops\x1a\x1cgoogle/protobuf/struct.proto\"Q\n" +
 	"\tSelectReq\x12\x1a\n" +
 	"\bdocument\x18\x01 \x01(\tR\bdocument\x12\x18\n" +
 	"\acolumns\x18\x02 \x03(\tR\acolumns\x12\x0e\n" +
-	"\x02id\x18\x03 \x01(\x03R\x02id\"8\n" +
-	"\tSelectRes\x12+\n" +
-	"\x04data\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x04data\"V\n" +
+	"\x02id\x18\x03 \x01(\x03R\x02id\"\x1f\n" +
+	"\tSelectRes\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\"V\n" +
 	"\tInsertReq\x12\x1a\n" +
 	"\bdocument\x18\x01 \x01(\tR\bdocument\x12-\n" +
 	"\x05value\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x05value\"#\n" +
@@ -439,27 +439,27 @@ const file_server_proto_ops_proto_rawDesc = "" +
 	"\bdocument\x18\x01 \x01(\tR\bdocument\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\x03R\x02id\"#\n" +
 	"\tDeleteRes\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\bR\x06status2\xb0\x01\n" +
-	"\aGreeter\x12'\n" +
+	"\x06status\x18\x01 \x01(\bR\x06status2\xac\x01\n" +
+	"\x03Ops\x12'\n" +
 	"\x06Create\x12\x0e.ops.CreateReq\x1a\r.ops.CreatRes\x12(\n" +
 	"\x06Insert\x12\x0e.ops.InsertReq\x1a\x0e.ops.InsertRes\x12(\n" +
 	"\x06Delete\x12\x0e.ops.DeleteReq\x1a\x0e.ops.DeleteRes\x12(\n" +
-	"\x06Select\x12\x0e.ops.SelectReq\x1a\x0e.ops.SelectResB\x12Z\x10server/proto/opsb\x06proto3"
+	"\x06Select\x12\x0e.ops.SelectReq\x1a\x0e.ops.SelectResB\x0fZ\rpkg/proto/opsb\x06proto3"
 
 var (
-	file_server_proto_ops_proto_rawDescOnce sync.Once
-	file_server_proto_ops_proto_rawDescData []byte
+	file_pkg_proto_ops_proto_rawDescOnce sync.Once
+	file_pkg_proto_ops_proto_rawDescData []byte
 )
 
-func file_server_proto_ops_proto_rawDescGZIP() []byte {
-	file_server_proto_ops_proto_rawDescOnce.Do(func() {
-		file_server_proto_ops_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_server_proto_ops_proto_rawDesc), len(file_server_proto_ops_proto_rawDesc)))
+func file_pkg_proto_ops_proto_rawDescGZIP() []byte {
+	file_pkg_proto_ops_proto_rawDescOnce.Do(func() {
+		file_pkg_proto_ops_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_ops_proto_rawDesc), len(file_pkg_proto_ops_proto_rawDesc)))
 	})
-	return file_server_proto_ops_proto_rawDescData
+	return file_pkg_proto_ops_proto_rawDescData
 }
 
-var file_server_proto_ops_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_server_proto_ops_proto_goTypes = []any{
+var file_pkg_proto_ops_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_pkg_proto_ops_proto_goTypes = []any{
 	(*SelectReq)(nil),       // 0: ops.SelectReq
 	(*SelectRes)(nil),       // 1: ops.SelectRes
 	(*InsertReq)(nil),       // 2: ops.InsertReq
@@ -470,45 +470,44 @@ var file_server_proto_ops_proto_goTypes = []any{
 	(*DeleteRes)(nil),       // 7: ops.DeleteRes
 	(*structpb.Struct)(nil), // 8: google.protobuf.Struct
 }
-var file_server_proto_ops_proto_depIdxs = []int32{
-	8, // 0: ops.SelectRes.data:type_name -> google.protobuf.Struct
-	8, // 1: ops.InsertReq.value:type_name -> google.protobuf.Struct
-	8, // 2: ops.CreateReq.schema:type_name -> google.protobuf.Struct
-	4, // 3: ops.Greeter.Create:input_type -> ops.CreateReq
-	2, // 4: ops.Greeter.Insert:input_type -> ops.InsertReq
-	6, // 5: ops.Greeter.Delete:input_type -> ops.DeleteReq
-	0, // 6: ops.Greeter.Select:input_type -> ops.SelectReq
-	5, // 7: ops.Greeter.Create:output_type -> ops.CreatRes
-	3, // 8: ops.Greeter.Insert:output_type -> ops.InsertRes
-	7, // 9: ops.Greeter.Delete:output_type -> ops.DeleteRes
-	1, // 10: ops.Greeter.Select:output_type -> ops.SelectRes
-	7, // [7:11] is the sub-list for method output_type
-	3, // [3:7] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+var file_pkg_proto_ops_proto_depIdxs = []int32{
+	8, // 0: ops.InsertReq.value:type_name -> google.protobuf.Struct
+	8, // 1: ops.CreateReq.schema:type_name -> google.protobuf.Struct
+	4, // 2: ops.Ops.Create:input_type -> ops.CreateReq
+	2, // 3: ops.Ops.Insert:input_type -> ops.InsertReq
+	6, // 4: ops.Ops.Delete:input_type -> ops.DeleteReq
+	0, // 5: ops.Ops.Select:input_type -> ops.SelectReq
+	5, // 6: ops.Ops.Create:output_type -> ops.CreatRes
+	3, // 7: ops.Ops.Insert:output_type -> ops.InsertRes
+	7, // 8: ops.Ops.Delete:output_type -> ops.DeleteRes
+	1, // 9: ops.Ops.Select:output_type -> ops.SelectRes
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_server_proto_ops_proto_init() }
-func file_server_proto_ops_proto_init() {
-	if File_server_proto_ops_proto != nil {
+func init() { file_pkg_proto_ops_proto_init() }
+func file_pkg_proto_ops_proto_init() {
+	if File_pkg_proto_ops_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_server_proto_ops_proto_rawDesc), len(file_server_proto_ops_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_ops_proto_rawDesc), len(file_pkg_proto_ops_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_server_proto_ops_proto_goTypes,
-		DependencyIndexes: file_server_proto_ops_proto_depIdxs,
-		MessageInfos:      file_server_proto_ops_proto_msgTypes,
+		GoTypes:           file_pkg_proto_ops_proto_goTypes,
+		DependencyIndexes: file_pkg_proto_ops_proto_depIdxs,
+		MessageInfos:      file_pkg_proto_ops_proto_msgTypes,
 	}.Build()
-	File_server_proto_ops_proto = out.File
-	file_server_proto_ops_proto_goTypes = nil
-	file_server_proto_ops_proto_depIdxs = nil
+	File_pkg_proto_ops_proto = out.File
+	file_pkg_proto_ops_proto_goTypes = nil
+	file_pkg_proto_ops_proto_depIdxs = nil
 }
