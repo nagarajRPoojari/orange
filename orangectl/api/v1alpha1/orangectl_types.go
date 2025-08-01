@@ -24,15 +24,58 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // OrangeCtlSpec defines the desired state of OrangeCtl
+// OrangeCtlSpec defines the desired state of OrangeCtl
 type OrangeCtlSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+	// Namespace in which all components (router, shards) will be deployed
+	Namespace string `json:"namespace"`
 
-	// foo is an example field of OrangeCtl. Edit orangectl_types.go to remove/update
-	// +optional
-	Foo *string `json:"foo,omitempty"`
+	// Router defines the configuration for the proxy/router component
+	Router RouterSpec `json:"router"`
+
+	// Shard defines the configuration for the shard StatefulSets
+	Shard ShardSpec `json:"shard"`
+}
+
+// RouterSpec defines the configuration for the router/proxy component
+type RouterSpec struct {
+	// Name of the router deployment/service
+	Name string `json:"name"`
+
+	// Labels to apply to the router deployment and service
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// Container image for the router
+	Image string `json:"image"`
+
+	// Port exposed by the router container
+	Port int32 `json:"port"`
+
+	// Optional environment variables or config parameters
+	Config map[string]string `json:"config,omitempty"`
+}
+
+// ShardSpec defines the configuration for the shards (StatefulSets)
+type ShardSpec struct {
+	// Base name prefix for shard StatefulSets (e.g., "shard" -> "shard-0", "shard-1", etc.)
+	Name string `json:"name"`
+
+	// Labels to apply to each shard StatefulSet and its pods
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// Container image for each shard
+	Image string `json:"image"`
+
+	// Number of shards to deploy (each as a StatefulSet)
+	Count int `json:"count"`
+
+	// Number of replicas per shard StatefulSet
+	Replicas int32 `json:"replicas"`
+
+	// Port exposed by each shard container
+	Port int32 `json:"port"`
+
+	// Optional environment variables or config parameters
+	Config map[string]string `json:"config,omitempty"`
 }
 
 // OrangeCtlStatus defines the observed state of OrangeCtl.

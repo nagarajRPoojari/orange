@@ -39,10 +39,82 @@ spec:
           spec:
             description: spec defines the desired state of OrangeCtl
             properties:
-              foo:
-                description: foo is an example field of OrangeCtl. Edit orangectl_types.go
-                  to remove/update
+              namespace:
+                description: Namespace in which all components (router, shards) will
+                  be deployed
                 type: string
+              router:
+                description: Router defines the configuration for the proxy/router
+                  component
+                properties:
+                  config:
+                    additionalProperties:
+                      type: string
+                    description: Optional environment variables or config parameters
+                    type: object
+                  image:
+                    description: Container image for the router
+                    type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels to apply to the router deployment and service
+                    type: object
+                  name:
+                    description: Name of the router deployment/service
+                    type: string
+                  port:
+                    description: Port exposed by the router container
+                    format: int32
+                    type: integer
+                required:
+                - image
+                - name
+                - port
+                type: object
+              shard:
+                description: Shard defines the configuration for the shard StatefulSets
+                properties:
+                  config:
+                    additionalProperties:
+                      type: string
+                    description: Optional environment variables or config parameters
+                    type: object
+                  count:
+                    description: Number of shards to deploy (each as a StatefulSet)
+                    type: integer
+                  image:
+                    description: Container image for each shard
+                    type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels to apply to each shard StatefulSet and its
+                      pods
+                    type: object
+                  name:
+                    description: Base name prefix for shard StatefulSets (e.g., "shard"
+                      -> "shard-0", "shard-1", etc.)
+                    type: string
+                  port:
+                    description: Port exposed by each shard container
+                    format: int32
+                    type: integer
+                  replicas:
+                    description: Number of replicas per shard StatefulSet
+                    format: int32
+                    type: integer
+                required:
+                - count
+                - image
+                - name
+                - port
+                - replicas
+                type: object
+            required:
+            - namespace
+            - router
+            - shard
             type: object
           status:
             description: status defines the observed state of OrangeCtl

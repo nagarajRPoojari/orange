@@ -1,9 +1,32 @@
 apiVersion: ctl.orangectl.orange.db/v1alpha1
 kind: OrangeCtl
 metadata:
+  name: orangectl-sample
   labels:
     app.kubernetes.io/name: orangectl
     app.kubernetes.io/managed-by: kustomize
-  name: orangectl-sample
 spec:
-  # TODO(user): Add fields here
+  namespace: default
+  router:
+    name: router
+    labels:
+      app: orange-router
+      tier: control
+    image: docker.io/nagsbixy/proxy:latest
+    port: 8080
+    config:
+      ROUTING_MODE: "hash"
+      LOG_LEVEL: "info"
+
+  shard:
+    name: shard
+    labels:
+      app: orange-shard
+      tier: data
+    image: docker.io/nagsbixy/server:latest
+    count: 2             # Number of shards
+    replicas: 2             # Replicas per shard
+    port: 8000
+    config:
+      STORAGE_PATH: "/app/data"
+      CACHE_ENABLED: "true"

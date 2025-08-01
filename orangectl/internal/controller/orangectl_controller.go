@@ -18,10 +18,18 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	ctlv1alpha1 "orangectl/api/v1alpha1"
@@ -47,11 +55,221 @@ type OrangeCtlReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
 func (r *OrangeCtlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
+	log := logf.FromContext(ctx)
 
-	// TODO(user): your logic here
+	var orangeCtl ctlv1alpha1.OrangeCtl
+	if err := r.Get(ctx, req.NamespacedName, &orangeCtl); err != nil {
+		if apierrors.IsNotFound(err) {
+			log := logf.FromContext(ctx)
+			log.Info("OrangeCtl resource not found (likely deleted), skipping")
+			return ctrl.Result{}, nil
+		}
+		log.Error(err, "Failed to get OrangeCtl resource")
+		return ctrl.Result{}, err
+	}
 
+	// Reconcile Router Deployment and Service
+	if err := r.reconcileRouter(ctx, &orangeCtl); err != nil {
+		log.Error(err, "Failed to reconcile router")
+		return ctrl.Result{}, err
+	}
+
+	// Reconcile Shard StatefulSets
+	if err := r.reconcileShards(ctx, &orangeCtl); err != nil {
+		log.Error(err, "Failed to reconcile shards")
+		return ctrl.Result{}, err
+	}
+
+	log.Info("Successfully reconciled OrangeCtl")
 	return ctrl.Result{}, nil
+}
+
+func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) error {
+	routerSpec := orangeCtl.Spec.Router
+	namespace := orangeCtl.Spec.Namespace
+
+	labels := routerSpec.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels["app"] = routerSpec.Name
+	labels["orangectl"] = orangeCtl.Name
+
+	deploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      routerSpec.Name,
+			Namespace: namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, deploy, func() error {
+		deploy.Labels = labels
+		deploy.Spec = appsv1.DeploymentSpec{
+			Replicas: pointer.Int32(1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  routerSpec.Name,
+							Image: routerSpec.Image,
+							Ports: []corev1.ContainerPort{
+								{
+									ContainerPort: routerSpec.Port,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		return controllerutil.SetControllerReference(orangeCtl, deploy, r.Scheme)
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to create/update router Deployment: %w", err)
+	}
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      routerSpec.Name,
+			Namespace: namespace,
+		},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+		service.Labels = labels
+		service.Spec = corev1.ServiceSpec{
+			Selector: labels,
+			Ports: []corev1.ServicePort{
+				{
+					Port:       routerSpec.Port,
+					TargetPort: intstr.FromInt(int(routerSpec.Port)),
+				},
+			},
+		}
+		return controllerutil.SetControllerReference(orangeCtl, service, r.Scheme)
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to create/update router Service: %w", err)
+	}
+
+	return nil
+}
+
+func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) error {
+	shardSpec := orangeCtl.Spec.Shard
+	namespace := orangeCtl.Spec.Namespace
+
+	for i := 0; i < shardSpec.Count; i++ {
+		shardName := fmt.Sprintf("%s-%d", shardSpec.Name, i)
+
+		ss := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      shardName,
+				Namespace: namespace,
+			},
+		}
+
+		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, ss, func() error {
+			// Set labels, adding shard and orangeCtl labels
+			if ss.Labels == nil {
+				ss.Labels = map[string]string{}
+			}
+			for k, v := range shardSpec.Labels {
+				ss.Labels[k] = v
+			}
+			ss.Labels["orangectl"] = orangeCtl.Name
+			ss.Labels["shard"] = shardName
+
+			// StatefulSet spec
+			ss.Spec.ServiceName = shardName
+			ss.Spec.Replicas = pointer.Int32(shardSpec.Replicas)
+			ss.Spec.Selector = &metav1.LabelSelector{
+				MatchLabels: ss.Labels,
+			}
+			ss.Spec.Template = corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: ss.Labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "shard",
+							Image: shardSpec.Image,
+							Ports: []corev1.ContainerPort{
+								{
+									ContainerPort: shardSpec.Port,
+								},
+							},
+							Env: toEnvVars(shardSpec.Config),
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "data",
+									MountPath: "/app/data",
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "data",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						},
+					},
+				},
+			}
+
+			return controllerutil.SetControllerReference(orangeCtl, ss, r.Scheme)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create or update StatefulSet %s: %w", shardName, err)
+		}
+
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      shardName,
+				Namespace: namespace,
+			},
+		}
+		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+			service.Spec = corev1.ServiceSpec{
+				ClusterIP: "None",
+				Ports: []corev1.ServicePort{
+					{
+						Port:       shardSpec.Port,
+						TargetPort: intstr.FromInt(int(shardSpec.Port)),
+					},
+				},
+			}
+			return controllerutil.SetControllerReference(orangeCtl, service, r.Scheme)
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to create or update StatefulSet service %s: %w", shardName, err)
+		}
+
+	}
+	return nil
+}
+
+func toEnvVars(config map[string]string) []corev1.EnvVar {
+	var envs []corev1.EnvVar
+	for k, v := range config {
+		envs = append(envs, corev1.EnvVar{
+			Name:  k,
+			Value: v,
+		})
+	}
+	return envs
 }
 
 // SetupWithManager sets up the controller with the Manager.
