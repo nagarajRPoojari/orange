@@ -4,7 +4,7 @@ metadata:
   name: orangectl-cluster-role
 rules:
   - apiGroups: [""]
-    resources: ["pods", "services"]
+    resources: ["pods", "services", "configmaps"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
   - apiGroups: ["apps"]

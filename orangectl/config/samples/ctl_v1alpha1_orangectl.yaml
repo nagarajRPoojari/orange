@@ -13,7 +13,7 @@ spec:
       app: orange-router
       tier: control
     image: docker.io/nagsbixy/proxy:latest
-    port: 8080
+    port: 8000
     config:
       ROUTING_MODE: "hash"
       LOG_LEVEL: "info"
@@ -23,10 +23,10 @@ spec:
     labels:
       app: orange-shard
       tier: data
-    image: docker.io/nagsbixy/server:latest
-    count: 2             # Number of shards
+    image: docker.io/nagsbixy/orange:latest
+    count: 2                # Number of shards
     replicas: 2             # Replicas per shard
-    port: 8000
+    port: 52001
     config:
       STORAGE_PATH: "/app/data"
       CACHE_ENABLED: "true"

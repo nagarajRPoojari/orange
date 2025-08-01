@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -68,15 +69,16 @@ func (r *OrangeCtlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	// Reconcile Router Deployment and Service
-	if err := r.reconcileRouter(ctx, &orangeCtl); err != nil {
-		log.Error(err, "Failed to reconcile router")
+	// Reconcile Shard StatefulSets
+	cfgMap, err := r.reconcileShards(ctx, &orangeCtl)
+	if err != nil {
+		log.Error(err, "Failed to reconcile shards")
 		return ctrl.Result{}, err
 	}
 
-	// Reconcile Shard StatefulSets
-	if err := r.reconcileShards(ctx, &orangeCtl); err != nil {
-		log.Error(err, "Failed to reconcile shards")
+	// Reconcile Router Deployment and Service
+	if err := r.reconcileRouter(ctx, &orangeCtl, cfgMap); err != nil {
+		log.Error(err, "Failed to reconcile router")
 		return ctrl.Result{}, err
 	}
 
@@ -84,7 +86,7 @@ func (r *OrangeCtlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) error {
+func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl, cfgMap *corev1.ConfigMap) error {
 	routerSpec := orangeCtl.Spec.Router
 	namespace := orangeCtl.Spec.Namespace
 
@@ -123,8 +125,22 @@ func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ct
 									ContainerPort: routerSpec.Port,
 								},
 							},
+							VolumeMounts: []corev1.VolumeMount{{
+								Name:      "cfg",
+								MountPath: "/app/config",
+							}},
 						},
 					},
+					Volumes: []corev1.Volume{{
+						Name: "cfg",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: cfgMap.Name,
+								},
+							},
+						},
+					}},
 				},
 			},
 		}
@@ -163,9 +179,11 @@ func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ct
 	return nil
 }
 
-func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) error {
+func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) (*corev1.ConfigMap, error) {
 	shardSpec := orangeCtl.Spec.Shard
 	namespace := orangeCtl.Spec.Namespace
+
+	var addresses []string
 
 	for i := 0; i < shardSpec.Count; i++ {
 		shardName := fmt.Sprintf("%s-%d", shardSpec.Name, i)
@@ -231,7 +249,7 @@ func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ct
 			return controllerutil.SetControllerReference(orangeCtl, ss, r.Scheme)
 		})
 		if err != nil {
-			return fmt.Errorf("failed to create or update StatefulSet %s: %w", shardName, err)
+			return nil, fmt.Errorf("failed to create or update StatefulSet %s: %w", shardName, err)
 		}
 
 		service := &corev1.Service{
@@ -254,11 +272,35 @@ func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ct
 		})
 
 		if err != nil {
-			return fmt.Errorf("failed to create or update StatefulSet service %s: %w", shardName, err)
+			return nil, fmt.Errorf("failed to create or update StatefulSet service %s: %w", shardName, err)
+		}
+
+		for j := 0; j < int(shardSpec.Replicas); j++ {
+			addresses = append(addresses, fmt.Sprintf("%s-%d.%s.%s.svc.cluster.local", shardName, j, shardName, namespace))
 		}
 
 	}
-	return nil
+
+	cfgData, _ := json.Marshal(addresses)
+
+	cfgMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      shardSpec.Name + "-proxy-config",
+			Namespace: namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, cfgMap, func() error {
+		if err := ctrl.SetControllerReference(orangeCtl, cfgMap, r.Scheme); err != nil {
+			return err
+		}
+		cfgMap.Data = map[string]string{
+			"SERVER_ADDRESS": string(cfgData),
+		}
+		return nil
+	})
+
+	return cfgMap, err
 }
 
 func toEnvVars(config map[string]string) []corev1.EnvVar {
