@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
@@ -22,19 +23,21 @@ type Server struct {
 	db     *odb.Oragedb
 	ctx    *context.Context
 	cancel context.CancelFunc
+	addr   string
 }
 
-func NewServer() *Server {
+func NewServer(addr string, port int64) *Server {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Server{
 		db:     odb.NewOrangedb(ctx, config.GetConfig()),
 		ctx:    &ctx,
 		cancel: cancel,
+		addr:   fmt.Sprintf("%s:%d", addr, port),
 	}
 }
 
 func (t *Server) Run() {
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", t.addr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -42,7 +45,7 @@ func (t *Server) Run() {
 	grpcServer := grpc.NewServer()
 	pb.RegisterOpsServer(grpcServer, &OpsServer{db: t.db})
 
-	log.Infof("gRPC server listening on :50051")
+	log.Infof("gRPC server listening on %s", t.addr)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

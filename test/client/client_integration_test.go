@@ -12,11 +12,11 @@ import (
 )
 
 func TestClient(t *testing.T) {
-	dbServer := server.NewServer()
+	dbServer := server.NewServer("localhost", 52001)
 	go dbServer.Run()
 
 	time.Sleep(2 * time.Second)
-	cl := client.NewClient()
+	cl := client.NewClient("localhost", 52001)
 
 	err := cl.Create(
 		&query.CreateOp{
