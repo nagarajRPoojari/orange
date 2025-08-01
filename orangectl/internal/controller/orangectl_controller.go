@@ -231,8 +231,31 @@ func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ct
 		if err != nil {
 			return fmt.Errorf("failed to create or update StatefulSet %s: %w", shardName, err)
 		}
-	}
 
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      shardName,
+				Namespace: namespace,
+			},
+		}
+		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+			service.Spec = corev1.ServiceSpec{
+				ClusterIP: "None",
+				Ports: []corev1.ServicePort{
+					{
+						Port:       shardSpec.Port,
+						TargetPort: intstr.FromInt(int(shardSpec.Port)),
+					},
+				},
+			}
+			return controllerutil.SetControllerReference(orangeCtl, service, r.Scheme)
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to create or update StatefulSet service %s: %w", shardName, err)
+		}
+
+	}
 	return nil
 }
 
