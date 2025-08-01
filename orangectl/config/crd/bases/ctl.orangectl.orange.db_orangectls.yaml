@@ -102,6 +102,7 @@ spec:
                     type: integer
                   replicas:
                     description: Number of replicas per shard StatefulSet
+                    format: int32
                     type: integer
                 required:
                 - count

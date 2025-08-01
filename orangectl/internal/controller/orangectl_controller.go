@@ -22,6 +22,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -58,10 +59,11 @@ func (r *OrangeCtlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	var orangeCtl ctlv1alpha1.OrangeCtl
 	if err := r.Get(ctx, req.NamespacedName, &orangeCtl); err != nil {
-		// if apierrors.IsNotFound(err) {
-		// 	log.Info("OrangeCtl resource not found. Ignoring since object must be deleted.")
-		// 	return ctrl.Result{}, nil
-		// }
+		if apierrors.IsNotFound(err) {
+			log := logf.FromContext(ctx)
+			log.Info("OrangeCtl resource not found (likely deleted), skipping")
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "Failed to get OrangeCtl resource")
 		return ctrl.Result{}, err
 	}
