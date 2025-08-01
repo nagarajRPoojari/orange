@@ -114,6 +114,6 @@ var replCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(replCmd)
 
-	replCmd.Flags().StringVarP(&Port, "port", "p", "8080", "Port to run the server on")
-	replCmd.Flags().StringVarP(&Address, "address", "a", "127.0.0.1", "Address to bind the server to")
+	replCmd.Flags().StringVarP(&Port, "port", "p", "8080", "Server port to connect to")
+	replCmd.Flags().StringVarP(&Address, "address", "a", "127.0.0.1", "Server address to connect to")
 }
