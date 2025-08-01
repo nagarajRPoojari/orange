@@ -18,10 +18,17 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	ctlv1alpha1 "orangectl/api/v1alpha1"
@@ -47,11 +54,122 @@ type OrangeCtlReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
 func (r *OrangeCtlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
+	log := logf.FromContext(ctx)
 
-	// TODO(user): your logic here
+	var orangeCtl ctlv1alpha1.OrangeCtl
+	if err := r.Get(ctx, req.NamespacedName, &orangeCtl); err != nil {
+		// if apierrors.IsNotFound(err) {
+		// 	log.Info("OrangeCtl resource not found. Ignoring since object must be deleted.")
+		// 	return ctrl.Result{}, nil
+		// }
+		log.Error(err, "Failed to get OrangeCtl resource")
+		return ctrl.Result{}, err
+	}
 
+	// Reconcile Router Deployment and Service
+	if err := r.reconcileRouter(ctx, &orangeCtl); err != nil {
+		log.Error(err, "Failed to reconcile router")
+		return ctrl.Result{}, err
+	}
+
+	// Reconcile Shard StatefulSets
+	if err := r.reconcileShards(ctx, &orangeCtl); err != nil {
+		log.Error(err, "Failed to reconcile shards")
+		return ctrl.Result{}, err
+	}
+
+	log.Info("Successfully reconciled OrangeCtl")
 	return ctrl.Result{}, nil
+}
+
+func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) error {
+	routerSpec := orangeCtl.Spec.Router
+	namespace := orangeCtl.Spec.Namespace
+
+	labels := routerSpec.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels["app"] = routerSpec.Name
+	labels["orangectl"] = orangeCtl.Name
+
+	deploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      routerSpec.Name,
+			Namespace: namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, deploy, func() error {
+		deploy.Labels = labels
+		deploy.Spec = appsv1.DeploymentSpec{
+			Replicas: pointer.Int32(1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "router",
+							Image: routerSpec.Image,
+							Ports: []corev1.ContainerPort{
+								{
+									ContainerPort: routerSpec.Port,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		return controllerutil.SetControllerReference(orangeCtl, deploy, r.Scheme)
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to create/update router Deployment: %w", err)
+	}
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      routerSpec.Name,
+			Namespace: namespace,
+		},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+		service.Labels = labels
+		service.Spec = corev1.ServiceSpec{
+			Selector: labels,
+			Ports: []corev1.ServicePort{
+				{
+					Port:       routerSpec.Port,
+					TargetPort: intstr.FromInt(int(routerSpec.Port)),
+				},
+			},
+		}
+		return controllerutil.SetControllerReference(orangeCtl, service, r.Scheme)
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to create/update router Service: %w", err)
+	}
+
+	return nil
+}
+
+func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) error {
+	for i := 0; i < orangeCtl.Spec.Shard.Count; i++ {
+		// shardName := fmt.Sprintf("%s-%d", orangeCtl.Spec.Shard.Name, i)
+
+		// TODO: Create or patch StatefulSet named `shardName`
+		// Use shard image, replicas, port, config, etc.
+		// Make sure to set ownerReference to orangeCtl for GC
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
