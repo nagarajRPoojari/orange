@@ -9,7 +9,6 @@ import (
 
 func main() {
 	fmt.Printf("Running project: `%s`\n", src.ProjectName())
-
 	// These functions demonstrate two separate checks to detect if the code is being
 	// run inside a docker container in debug mode, or production mode!
 	//
