@@ -101,11 +101,13 @@ run-debug:
 ## `docker-gen`: Create a production docker image for `orange`
 docker-gen:
 	echo "Building docker image \`$(IMAGE):$(VERSION)\`..."
+	cp docker/orange/.dockerignore .dockerignore
 	docker build --rm \
 		--build-arg final_image=scratch \
 		--build-arg build_mode=production \
 		-t $(IMAGE):$(VERSION) . \
-		-f ./docker/Dockerfile
+		-f ./docker/orange/Dockerfile
+	rm .dockerignore
 
 
 .PHONY: docker-debug
