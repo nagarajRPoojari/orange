@@ -92,6 +92,12 @@ var replCmd = &cobra.Command{
 			if err != nil {
 				fmt.Printf("%v\n", err)
 			} else {
+
+				if res == nil {
+					fmt.Println("👍")
+					continue
+				}
+
 				var data interface{}
 				resBytes := res.([]byte)
 				if err := json.Unmarshal(resBytes, &data); err != nil {

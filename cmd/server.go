@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/nagarajRPoojari/orange/net/server"
-	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +22,7 @@ var serverCmd = &cobra.Command{
 	Short: "Run the server",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Starting server at %s:%s...\n", ServerAddress, ServerPort)
-		log.Disable()
+		// log.Disable()
 		stop := make(chan os.Signal, 1)
 		signal.Notify(stop, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
@@ -42,6 +41,6 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 
 	// Add flags
-	serverCmd.Flags().StringVarP(&ServerPort, "port", "p", "8080", "Port to run the server on")
+	serverCmd.Flags().StringVarP(&ServerPort, "port", "p", "8080", "Port to run the server ")
 	serverCmd.Flags().StringVarP(&ServerAddress, "address", "a", "127.0.0.1", "Address to bind the server to")
 }
