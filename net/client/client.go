@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
@@ -17,11 +18,11 @@ type Client struct {
 	client pb.OpsClient
 }
 
-func NewClient() *Client {
-	addr := "localhost:50051"
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewClient(addr string, port int64) *Client {
+	address := fmt.Sprintf("%s:%d", addr, port)
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to dial to server at %s", addr)
+		log.Fatalf("failed to dial to server at %s", address)
 	}
 	client := pb.NewOpsClient(conn)
 	return &Client{
@@ -56,7 +57,7 @@ func (t *Client) Insert(op *query.InsertOp) error {
 	return nil
 }
 
-func (t *Client) Select(op *query.SelectOp) (*pb.SelectRes, error) {
+func (t *Client) Select(op *query.SelectOp) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -67,5 +68,5 @@ func (t *Client) Select(op *query.SelectOp) (*pb.SelectRes, error) {
 		return nil, err
 	}
 
-	return resp, nil
+	return resp.Data, nil
 }
