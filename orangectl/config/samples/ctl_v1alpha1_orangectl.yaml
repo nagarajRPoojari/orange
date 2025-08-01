@@ -1,0 +1,9 @@
+apiVersion: ctl.orangectl.orange.db/v1alpha1
+kind: OrangeCtl
+metadata:
+  labels:
+    app.kubernetes.io/name: orangectl
+    app.kubernetes.io/managed-by: kustomize
+  name: orangectl-sample
+spec:
+  # TODO(user): Add fields here

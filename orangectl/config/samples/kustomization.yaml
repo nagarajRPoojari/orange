@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- ctl_v1alpha1_orangectl.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
