@@ -3,8 +3,11 @@ module github.com/nagarajRPoojari/orange/gateway
 go 1.24.5
 
 require (
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/nagarajRPoojari/orange v0.0.0-20250801162142-07c525a73b44 // indirect
+	github.com/fsnotify/fsnotify v1.9.0
+	github.com/nagarajRPoojari/orange v0.0.0-20250801162142-07c525a73b44
+)
+
+require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
