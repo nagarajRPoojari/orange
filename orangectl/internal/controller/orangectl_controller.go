@@ -252,6 +252,18 @@ func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ct
 			return nil, fmt.Errorf("failed to create or update StatefulSet %s: %w", shardName, err)
 		}
 
+		// existingSvc := &corev1.Service{}
+		// svcKey := types.NamespacedName{Name: shardName, Namespace: namespace}
+		// err = r.Client.Get(ctx, svcKey, existingSvc)
+
+		// if err == nil && len(existingSvc.Spec.Selector) == 0 {
+		// 	// Delete the service if selector is missing (immutable field cannot be updated)
+		// 	if delErr := r.Client.Delete(ctx, existingSvc); delErr != nil {
+		// 		return nil, fmt.Errorf("failed to delete service %s for selector fix: %w", shardName, delErr)
+		// 	}
+		// 	// Optionally wait a little or re-fetch if your controller needs to avoid race
+		// }
+
 		service := &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      shardName,
@@ -261,6 +273,10 @@ func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ct
 		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
 			service.Spec = corev1.ServiceSpec{
 				ClusterIP: "None",
+				Selector: map[string]string{
+					"shard":     shardName, // should
+					"orangectl": orangeCtl.Name,
+				},
 				Ports: []corev1.ServicePort{
 					{
 						Port:       shardSpec.Port,

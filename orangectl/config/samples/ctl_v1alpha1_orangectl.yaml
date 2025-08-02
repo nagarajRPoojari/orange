@@ -12,7 +12,7 @@ spec:
     labels:
       app: orange-router
       tier: control
-    image: docker.io/nagsbixy/proxy:latest
+    image: docker.io/nagsbixy/gateway:latest
     port: 8000
     config:
       ROUTING_MODE: "hash"
