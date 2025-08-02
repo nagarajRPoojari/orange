@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -34,11 +35,35 @@ var _ = Describe("OrangeCtl Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
+		resource := &ctlv1alpha1.OrangeCtl{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resourceName,
+				Namespace: "default",
+			},
+			Spec: ctlv1alpha1.OrangeCtlSpec{
+				Namespace: "default",
+				Router: ctlv1alpha1.RouterSpec{
+					Name:   "router",
+					Labels: map[string]string{},
+					Image:  "docker.io/nagsbixy/gateway:latest",
+					Port:   8000,
+				},
+				Shard: ctlv1alpha1.ShardSpec{
+					Name:     "shard",
+					Labels:   map[string]string{},
+					Image:    "docker.io/nagsbixy/orange:latest",
+					Count:    1,
+					Replicas: 1,
+					Port:     52001,
+				},
+			},
+		}
+
 		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		orangectl := &ctlv1alpha1.OrangeCtl{}
 
@@ -46,19 +71,11 @@ var _ = Describe("OrangeCtl Controller", func() {
 			By("creating the custom resource for the Kind OrangeCtl")
 			err := k8sClient.Get(ctx, typeNamespacedName, orangectl)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &ctlv1alpha1.OrangeCtl{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: "default",
-					},
-					// TODO(user): Specify other spec details if needed.
-				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &ctlv1alpha1.OrangeCtl{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
@@ -77,8 +94,12 @@ var _ = Describe("OrangeCtl Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+
+			// should create router Deployment object
+			deploy := appsv1.Deployment{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: resource.Spec.Router.Name}, &deploy)
+			Expect(err).NotTo(HaveOccurred())
+
 		})
 	})
 })
