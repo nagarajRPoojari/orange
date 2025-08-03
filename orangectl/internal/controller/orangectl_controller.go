@@ -83,7 +83,7 @@ func (r *OrangeCtlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	log.Info("Successfully reconciled OrangeCtl")
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, err
 }
 
 func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl, cfgMap *corev1.ConfigMap) error {
