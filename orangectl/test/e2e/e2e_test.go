@@ -295,23 +295,41 @@ var _ = Describe("Manager", Ordered, func() {
 			Entry("shard-0-0 Pod", "create Pod shard-0-0 in StatefulSet shard-0 successful"),
 		)
 
-		DescribeTable("should eventually get a Running pod",
-			func(resourceType, resource string) {
-				Eventually(func() string {
-					cmd := exec.Command("kubectl", "get", resourceType, resource, "-o", "json")
-					out, err := cmd.Output()
-					Expect(err).ToNot(HaveOccurred())
+		Describe("should create shards/Statefulsets", func() {
+			DescribeTable("should spin up Statefulsets with 2 replicas",
+				func(resource string) {
+					Eventually(func() int32 {
+						cmd := exec.Command("kubectl", "get", "statefulset", resource, "-o", "json")
+						out, err := cmd.Output()
+						Expect(err).ToNot(HaveOccurred())
 
-					podDesc := utils.FormatPod(out)
-					Expect(podDesc.Name).To(Equal(resource))
-					return string(podDesc.Status.Phase)
-				}, "60s", "5s").Should(Equal("Running"))
-			},
-			Entry("shard-0 pod-0", "pod", "shard-0-0"),
-			Entry("shard-0 pod-1", "pod", "shard-0-1"),
-			Entry("shard-1 pod-0", "pod", "shard-1-0"),
-			Entry("shard-1 pod-1", "pod", "shard-1-1"),
-		)
+						ssDesc := utils.FormatStatefulset(out)
+						Expect(ssDesc.Name).To(Equal(resource))
+						return ssDesc.Status.ReadyReplicas
+					}, "60s", "5s").Should(Equal(int32(2)))
+				},
+				Entry("shard-0", "shard-0"),
+				Entry("shard-1", "shard-1"),
+			)
+
+			DescribeTable("should eventually get Running pod for shards",
+				func(resource string) {
+					Eventually(func() string {
+						cmd := exec.Command("kubectl", "get", "pod", resource, "-o", "json")
+						out, err := cmd.Output()
+						Expect(err).ToNot(HaveOccurred())
+
+						podDesc := utils.FormatPod(out)
+						Expect(podDesc.Name).To(Equal(resource))
+						return string(podDesc.Status.Phase)
+					}, "60s", "5s").Should(Equal("Running"))
+				},
+				Entry("shard-0 pod-0", "shard-0-0"),
+				Entry("shard-0 pod-1", "shard-0-1"),
+				Entry("shard-1 pod-0", "shard-1-0"),
+				Entry("shard-1 pod-1", "shard-1-1"),
+			)
+		})
 
 	})
 })
@@ -376,7 +394,6 @@ func getEventsFromNamespace(namespace string) string {
 	for _, ev := range eventList.Items {
 		eventMessages.Write([]byte(ev.Message + "\n"))
 	}
-	fmt.Println(eventMessages.String())
 	return eventMessages.String()
 }
 

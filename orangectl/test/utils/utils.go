@@ -27,6 +27,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2" // nolint:revive,staticcheck
 	corev1 "k8s.io/api/core/v1"
+
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 const (
@@ -282,4 +284,12 @@ func FormatPod(podDescBytes []byte) corev1.Pod {
 		panic(err)
 	}
 	return pod
+}
+
+func FormatStatefulset(ssBytes []byte) appsv1.StatefulSet {
+	var ss appsv1.StatefulSet
+	if err := json.Unmarshal(ssBytes, &ss); err != nil {
+		panic(err)
+	}
+	return ss
 }
