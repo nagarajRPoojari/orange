@@ -32,7 +32,8 @@ import (
 )
 
 var _ = Describe("OrangeCtl Controller", func() {
-	Context("When reconciling a resource", func() {
+
+	Context("When reconciling a resource", Ordered, func() {
 		const resourceName = "test-resource"
 
 		resource := &ctlv1alpha1.OrangeCtl{
@@ -61,13 +62,14 @@ var _ = Describe("OrangeCtl Controller", func() {
 
 		ctx := context.Background()
 
+		// @nagarajRPoojari: create cluster in temperory namespace
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
 			Namespace: "default",
 		}
 		orangectl := &ctlv1alpha1.OrangeCtl{}
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			By("creating the custom resource for the Kind OrangeCtl")
 			err := k8sClient.Get(ctx, typeNamespacedName, orangectl)
 			if err != nil && errors.IsNotFound(err) {
@@ -75,7 +77,7 @@ var _ = Describe("OrangeCtl Controller", func() {
 			}
 		})
 
-		AfterEach(func() {
+		AfterAll(func() {
 			resource := &ctlv1alpha1.OrangeCtl{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
@@ -83,6 +85,7 @@ var _ = Describe("OrangeCtl Controller", func() {
 			By("Cleanup the specific resource instance OrangeCtl")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
+
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &OrangeCtlReconciler{
@@ -95,11 +98,23 @@ var _ = Describe("OrangeCtl Controller", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
+		})
+
+		DescribeTable("should ensure all StatefulSet created",
+			func(resourceName string) {
+				ss := appsv1.StatefulSet{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: resourceName}, &ss)
+				Expect(err).NotTo(HaveOccurred())
+			},
+			Entry("shard-0 StatefulSet", "shard-0"),
+		)
+
+		It("should ensure Router is created", func() {
 			// should create router Deployment object
 			deploy := appsv1.Deployment{}
-			err = k8sClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: resource.Spec.Router.Name}, &deploy)
+			err := k8sClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: resource.Spec.Router.Name}, &deploy)
 			Expect(err).NotTo(HaveOccurred())
-
 		})
+
 	})
 })

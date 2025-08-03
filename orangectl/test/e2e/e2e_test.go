@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -78,6 +79,10 @@ var _ = Describe("Manager", Ordered, func() {
 		cmd := exec.Command("kubectl", "delete", "pod", "curl-metrics", "-n", namespace)
 		_, _ = utils.Run(cmd)
 
+		By("deleting ClsuterRoleBinding")
+		cmd = exec.Command("kubectl", "delete", "clusterrolebinding", metricsRoleBindingName, "-n", namespace)
+		_, _ = utils.Run(cmd)
+
 		By("undeploying the controller-manager")
 		cmd = exec.Command("make", "undeploy")
 		_, _ = utils.Run(cmd)
@@ -106,7 +111,7 @@ var _ = Describe("Manager", Ordered, func() {
 			}
 
 			By("Fetching Kubernetes events")
-			cmd = exec.Command("kubectl", "get", "events", "-n", namespace, "--sort-by=.lastTimestamp")
+			cmd = exec.Command("kubectl", "get", "events", "--sort-by=.lastTimestamp")
 			eventsOutput, err := utils.Run(cmd)
 			if err == nil {
 				_, _ = fmt.Fprintf(GinkgoWriter, "Kubernetes events:\n%s", eventsOutput)
@@ -137,7 +142,7 @@ var _ = Describe("Manager", Ordered, func() {
 	SetDefaultEventuallyTimeout(2 * time.Minute)
 	SetDefaultEventuallyPollingInterval(time.Second)
 
-	Context("Manager", func() {
+	Context("Manager", Ordered, func() {
 		It("should run successfully", func() {
 			By("validating that the controller-manager pod is running as expected")
 			verifyControllerUp := func(g Gomega) {
@@ -257,16 +262,75 @@ var _ = Describe("Manager", Ordered, func() {
 			))
 		})
 
-		// +kubebuilder:scaffold:e2e-webhooks-checks
+		It("should ensure proper reconcilation", func() {
+			By("applying OrangeCtl custom resource")
+			deployCRD := func(g Gomega) {
+				cmd := exec.Command("kubectl", "apply", "-f", "test/e2e/ctl_v1alpha1_orangectl_test.yaml")
+				_, err := utils.Run(cmd)
+				g.Expect(err).NotTo(HaveOccurred())
+			}
+			Eventually(deployCRD, 1*time.Minute).Should(Succeed())
+			time.Sleep(5 * time.Second)
 
-		// TODO: Customize the e2e test suite with scenarios specific to your project.
-		// Consider applying sample/CR(s) and check their status and/or verifying
-		// the reconciliation by using the metrics, i.e.:
-		// metricsOutput := getMetricsOutput()
-		// Expect(metricsOutput).To(ContainSubstring(
-		//    fmt.Sprintf(`controller_runtime_reconcile_total{controller="%s",result="success"} 1`,
-		//    strings.ToLower(<Kind>),
-		// ))
+			By("fetching controller pod logs")
+			verifyReconcile := func(g Gomega) {
+				controllerPoodLogs := getControllerLogs(controllerPodName)
+				g.Expect(controllerPoodLogs).To(ContainSubstring(
+					"Successfully reconciled OrangeCtl"), "reconcilation failed")
+			}
+			Eventually(verifyReconcile).Should(Succeed())
+		})
+
+		events := getEventsFromNamespace("default")
+		DescribeTable("should ensure all shards created events logged",
+			func(msg string) {
+				Expect(events).To(
+					ContainSubstring(msg),
+					"resource not found",
+				)
+			},
+			Entry("shard-0-1 Pod", "create Pod shard-0-1 in StatefulSet shard-0 successful"),
+			Entry("shard-1-1 Pod", "create Pod shard-1-1 in StatefulSet shard-1 successful"),
+			Entry("shard-1-0 Pod", "create Pod shard-1-0 in StatefulSet shard-1 successful"),
+			Entry("shard-0-0 Pod", "create Pod shard-0-0 in StatefulSet shard-0 successful"),
+		)
+
+		Describe("should create shards/Statefulsets", func() {
+			DescribeTable("should spin up Statefulsets with 2 replicas",
+				func(resource string) {
+					Eventually(func() int32 {
+						cmd := exec.Command("kubectl", "get", "statefulset", resource, "-o", "json")
+						out, err := cmd.Output()
+						Expect(err).ToNot(HaveOccurred())
+
+						ssDesc := utils.FormatStatefulset(out)
+						Expect(ssDesc.Name).To(Equal(resource))
+						return ssDesc.Status.ReadyReplicas
+					}, "60s", "5s").Should(Equal(int32(2)))
+				},
+				Entry("shard-0", "shard-0"),
+				Entry("shard-1", "shard-1"),
+			)
+
+			DescribeTable("should eventually get Running pod for shards",
+				func(resource string) {
+					Eventually(func() string {
+						cmd := exec.Command("kubectl", "get", "pod", resource, "-o", "json")
+						out, err := cmd.Output()
+						Expect(err).ToNot(HaveOccurred())
+
+						podDesc := utils.FormatPod(out)
+						Expect(podDesc.Name).To(Equal(resource))
+						return string(podDesc.Status.Phase)
+					}, "60s", "5s").Should(Equal("Running"))
+				},
+				Entry("shard-0 pod-0", "shard-0-0"),
+				Entry("shard-0 pod-1", "shard-0-1"),
+				Entry("shard-1 pod-0", "shard-1-0"),
+				Entry("shard-1 pod-1", "shard-1-1"),
+			)
+		})
+
 	})
 })
 
@@ -319,6 +383,25 @@ func getMetricsOutput() string {
 	Expect(err).NotTo(HaveOccurred(), "Failed to retrieve logs from curl pod")
 	Expect(metricsOutput).To(ContainSubstring("< HTTP/1.1 200 OK"))
 	return metricsOutput
+}
+
+func getEventsFromNamespace(namespace string) string {
+	cmd := exec.Command("kubectl", "get", "events", "-n", namespace, "--sort-by=.lastTimestamp", "-o", "json")
+	eventsOutput, err := cmd.Output()
+	Expect(err).NotTo(HaveOccurred(), "Failed to retrieve events")
+	eventList := utils.FormatEventList(eventsOutput)
+	var eventMessages strings.Builder
+	for _, ev := range eventList.Items {
+		eventMessages.Write([]byte(ev.Message + "\n"))
+	}
+	return eventMessages.String()
+}
+
+func getControllerLogs(podName string) string {
+	cmd := exec.Command("kubectl", "logs", podName, "-n", namespace)
+	controllerLogs, err := utils.Run(cmd)
+	Expect(err).NotTo(HaveOccurred(), "Failed to retrieve controller pod logs")
+	return controllerLogs
 }
 
 // tokenRequest is a simplified representation of the Kubernetes TokenRequest API response,

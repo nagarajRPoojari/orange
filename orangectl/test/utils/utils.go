@@ -19,12 +19,16 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2" // nolint:revive,staticcheck
+	corev1 "k8s.io/api/core/v1"
+
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 const (
@@ -264,4 +268,28 @@ func UncommentCode(filename, target, prefix string) error {
 	}
 
 	return nil
+}
+
+func FormatEventList(eventsBytes []byte) corev1.EventList {
+	var events corev1.EventList
+	if err := json.Unmarshal(eventsBytes, &events); err != nil {
+		panic(err)
+	}
+	return events
+}
+
+func FormatPod(podDescBytes []byte) corev1.Pod {
+	var pod corev1.Pod
+	if err := json.Unmarshal(podDescBytes, &pod); err != nil {
+		panic(err)
+	}
+	return pod
+}
+
+func FormatStatefulset(ssBytes []byte) appsv1.StatefulSet {
+	var ss appsv1.StatefulSet
+	if err := json.Unmarshal(ssBytes, &ss); err != nil {
+		panic(err)
+	}
+	return ss
 }

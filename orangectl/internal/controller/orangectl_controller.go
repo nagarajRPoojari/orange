@@ -48,10 +48,13 @@ type OrangeCtlReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the OrangeCtl object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
+// OrangeCtlReconciler spins up required number of shards with a router
+// Components:
+//   - Shard: a Statefulset with specified number of replicas, each hosting a orangedb instance.
+//     check https://github.com/nagarajRPoojari/orange for more info.
+//   - Router: a single Deployment of orange/gateway.
+//     check https://github.com/nagarajRPoojari/orange/gateway for more info.
+//   - Config: ConfigMap instance to store internal shard related info.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
@@ -83,9 +86,12 @@ func (r *OrangeCtlReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	log.Info("Successfully reconciled OrangeCtl")
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, err
 }
 
+// reconcileRouter ensures that a Deployment and Service for the router component
+// are created or updated to match the OrangeCtl spec. It sets appropriate labels,
+// attaches the router to the given ConfigMap, and establishes controller ownership.
 func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl, cfgMap *corev1.ConfigMap) error {
 	routerSpec := orangeCtl.Spec.Router
 	namespace := orangeCtl.Spec.Namespace
@@ -107,7 +113,10 @@ func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ct
 	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, deploy, func() error {
 		deploy.Labels = labels
 		deploy.Spec = appsv1.DeploymentSpec{
+
+			// @nagarajRPoojari: support multiple replica option for router
 			Replicas: pointer.Int32(1),
+
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
@@ -151,6 +160,7 @@ func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ct
 		return fmt.Errorf("failed to create/update router Deployment: %w", err)
 	}
 
+	// Expose router service to client
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      routerSpec.Name,
@@ -179,6 +189,9 @@ func (r *OrangeCtlReconciler) reconcileRouter(ctx context.Context, orangeCtl *ct
 	return nil
 }
 
+// reconcileShards creates or updates a set of StatefulSets and headless Services
+// for each shard defined in the OrangeCtl spec. It assembles the DNS addresses
+// for all shard pods and returns a ConfigMap containing these addresses for proxy usage.
 func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ctlv1alpha1.OrangeCtl) (*corev1.ConfigMap, error) {
 	shardSpec := orangeCtl.Spec.Shard
 	namespace := orangeCtl.Spec.Namespace
@@ -264,6 +277,8 @@ func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ct
 		// 	// Optionally wait a little or re-fetch if your controller needs to avoid race
 		// }
 
+		// Expose a shard level Service to distinguish pods from different shards
+		// e.g: shard-0-1.shard-0.default.svc.cluster.local
 		service := &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      shardName,
@@ -274,7 +289,9 @@ func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ct
 			service.Spec = corev1.ServiceSpec{
 				ClusterIP: "None",
 				Selector: map[string]string{
-					"shard":     shardName, // should
+					// Selector labels should match with one being specified in
+					// StatefulSet Pod template
+					"shard":     shardName,
 					"orangectl": orangeCtl.Name,
 				},
 				Ports: []corev1.ServicePort{
@@ -291,6 +308,7 @@ func (r *OrangeCtlReconciler) reconcileShards(ctx context.Context, orangeCtl *ct
 			return nil, fmt.Errorf("failed to create or update StatefulSet service %s: %w", shardName, err)
 		}
 
+		// e.g: shard-0-1.shard-0.default.svc.cluster.local
 		for j := 0; j < int(shardSpec.Replicas); j++ {
 			addresses = append(addresses, fmt.Sprintf("%s-%d.%s.%s.svc.cluster.local", shardName, j, shardName, namespace))
 		}
