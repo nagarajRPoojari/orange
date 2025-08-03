@@ -99,6 +99,7 @@ var _ = BeforeSuite(func() {
 	rec.SetupWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
+	// Starting controller manager in go routine to avoid blocking further tests
 	go func() {
 		defer GinkgoRecover()
 		err = mgr.Start(ctx)
