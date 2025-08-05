@@ -34,6 +34,14 @@ const (
 	__PROD__       = "prod"
 )
 
+func init() {
+	rootCmd.AddCommand(serverCmd)
+
+	// Add flags
+	serverCmd.Flags().StringVarP(&ServerPort, "port", "p", "8080", "Port to run the server ")
+	serverCmd.Flags().StringVarP(&ServerAddress, "address", "a", "127.0.0.1", "Address to bind the server to")
+}
+
 var (
 	ServerPort    string
 	ServerAddress string
@@ -59,14 +67,6 @@ var serverCmd = &cobra.Command{
 
 		s.Stop()
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(serverCmd)
-
-	// Add flags
-	serverCmd.Flags().StringVarP(&ServerPort, "port", "p", "8080", "Port to run the server ")
-	serverCmd.Flags().StringVarP(&ServerAddress, "address", "a", "127.0.0.1", "Address to bind the server to")
 }
 
 func checkBuildMode() {
