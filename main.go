@@ -35,6 +35,7 @@ import (
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -142,6 +143,59 @@ func runInProdMode() {
 	switch value {
 	case __SHARDED__:
 		fmt.Println("(Check prod mode): Running in `sharded` mode!")
+		ctx := context.Background()
+
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			panic(err)
+		}
+
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			panic(err)
+		}
+
+		id := utils.GetEnv(__HOST_ID__, uuid.NewString())
+		lockNamespace := utils.GetEnv(__K8S_LEASE_NAMESAPCE__, "default")
+
+		lockName := utils.GetEnv(__K8S_LEASE_NAME__, "orange-leader-election-lock")
+
+		lock := &resourcelock.LeaseLock{
+			LeaseMeta: metav1.ObjectMeta{
+				Name:      lockName,
+				Namespace: lockNamespace,
+			},
+			Client: clientset.CoordinationV1(),
+			LockConfig: resourcelock.ResourceLockConfig{
+				Identity: id,
+			},
+		}
+
+		go func() {
+			leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+				Lock:          lock,
+				LeaseDuration: 15 * time.Second,
+				RenewDeadline: 10 * time.Second,
+				RetryPeriod:   2 * time.Second,
+				Callbacks: leaderelection.LeaderCallbacks{
+					OnStartedLeading: func(ctx context.Context) {
+						fmt.Println("I am the leader now")
+						// Do leader stuff
+					},
+					OnStoppedLeading: func() {
+						fmt.Println("I am no longer the leader")
+					},
+					OnNewLeader: func(identity string) {
+						if identity == id {
+							return
+						}
+						fmt.Printf("New leader elected: %s\n", identity)
+					},
+				},
+				ReleaseOnCancel: true,
+				Name:            "orange",
+			})
+		}()
 
 	case __STANDALONE__:
 		fmt.Println("(Check prod mode): Running in `stadalone` mode!")

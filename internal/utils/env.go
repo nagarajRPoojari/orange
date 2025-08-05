@@ -8,7 +8,7 @@ import (
 
 func GetEnv(key string, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
-		log.Warnf("%s =`%s`", key, fallback)
+		log.Infof("%s=`%s`", key, fallback)
 		return value
 	}
 	log.Warnf("%s not set, using `%s`", key, fallback)
