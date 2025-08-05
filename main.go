@@ -31,14 +31,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/nagarajRPoojari/orange/cmd"
 	src "github.com/nagarajRPoojari/orange/internal"
+	"github.com/nagarajRPoojari/orange/internal/elector"
 	"github.com/nagarajRPoojari/orange/internal/utils"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/leaderelection"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
 )
 
 const (
@@ -85,52 +82,30 @@ func runInDevMode() {
 			log.Fatalf("failed to extract kube config, err=%v", err)
 		}
 
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err)
-		}
-
 		id := utils.GetEnv(__HOST_ID__, uuid.NewString())
 		lockNamespace := utils.GetEnv(__K8S_LEASE_NAMESAPCE__, "default")
-
 		lockName := utils.GetEnv(__K8S_LEASE_NAME__, "orange-leader-election-lock")
 
-		lock := &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{
-				Name:      lockName,
-				Namespace: lockNamespace,
+		elector := &elector.LeaderElector{
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
+			Name:          lockName,
+			Namespace:     lockNamespace,
+			Host:          id,
+			Config:        config,
+			OnStartedLeading: func(ctx context.Context) {
+				log.Infof("I become leader")
 			},
-			Client: clientset.CoordinationV1(),
-			LockConfig: resourcelock.ResourceLockConfig{
-				Identity: id,
+			OnStoppedLeading: func() {
+				log.Infof("stpping down as a leader")
+			},
+			OnNewLeader: func(identity string) {
+				log.Infof("some new guy is the leader now")
 			},
 		}
 
-		go func() {
-			leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-				Lock:          lock,
-				LeaseDuration: 15 * time.Second,
-				RenewDeadline: 10 * time.Second,
-				RetryPeriod:   2 * time.Second,
-				Callbacks: leaderelection.LeaderCallbacks{
-					OnStartedLeading: func(ctx context.Context) {
-						fmt.Println("I am the leader now")
-						// Do leader stuff
-					},
-					OnStoppedLeading: func() {
-						fmt.Println("I am no longer the leader")
-					},
-					OnNewLeader: func(identity string) {
-						if identity == id {
-							return
-						}
-						fmt.Printf("New leader elected: %s\n", identity)
-					},
-				},
-				ReleaseOnCancel: true,
-				Name:            "orange",
-			})
-		}()
+		elector.Run(&ctx)
 
 	case __STANDALONE__:
 		fmt.Println("(Check dev mode): Running in `stadalone` mode!")
@@ -150,52 +125,30 @@ func runInProdMode() {
 			panic(err)
 		}
 
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err)
-		}
-
 		id := utils.GetEnv(__HOST_ID__, uuid.NewString())
 		lockNamespace := utils.GetEnv(__K8S_LEASE_NAMESAPCE__, "default")
-
 		lockName := utils.GetEnv(__K8S_LEASE_NAME__, "orange-leader-election-lock")
 
-		lock := &resourcelock.LeaseLock{
-			LeaseMeta: metav1.ObjectMeta{
-				Name:      lockName,
-				Namespace: lockNamespace,
+		elector := &elector.LeaderElector{
+			LeaseDuration: 15 * time.Second,
+			RenewDeadline: 10 * time.Second,
+			RetryPeriod:   2 * time.Second,
+			Name:          lockName,
+			Namespace:     lockNamespace,
+			Host:          id,
+			Config:        config,
+			OnStartedLeading: func(ctx context.Context) {
+				log.Infof("I become leader")
 			},
-			Client: clientset.CoordinationV1(),
-			LockConfig: resourcelock.ResourceLockConfig{
-				Identity: id,
+			OnStoppedLeading: func() {
+				log.Infof("stpping down as a leader")
+			},
+			OnNewLeader: func(identity string) {
+				log.Infof("some new guy is the leader now")
 			},
 		}
 
-		go func() {
-			leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-				Lock:          lock,
-				LeaseDuration: 15 * time.Second,
-				RenewDeadline: 10 * time.Second,
-				RetryPeriod:   2 * time.Second,
-				Callbacks: leaderelection.LeaderCallbacks{
-					OnStartedLeading: func(ctx context.Context) {
-						fmt.Println("I am the leader now")
-						// Do leader stuff
-					},
-					OnStoppedLeading: func() {
-						fmt.Println("I am no longer the leader")
-					},
-					OnNewLeader: func(identity string) {
-						if identity == id {
-							return
-						}
-						fmt.Printf("New leader elected: %s\n", identity)
-					},
-				},
-				ReleaseOnCancel: true,
-				Name:            "orange",
-			})
-		}()
+		elector.Run(&ctx)
 
 	case __STANDALONE__:
 		fmt.Println("(Check prod mode): Running in `stadalone` mode!")
