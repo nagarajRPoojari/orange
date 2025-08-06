@@ -17,13 +17,24 @@ import (
 )
 
 const (
-	__BUILD_MODE__          = "__BUILD_MODE__"
-	__DEV_MODE__            = "__DEV_MODE__"
-	__PROD_MODE__           = "__PROD_MODE__"
-	__HOST_ID__             = "__HOST_ID__"
+
+	// build modes
+	__BUILD_MODE__ = "__BUILD_MODE__"
+	__DEV_MODE__   = "__DEV_MODE__"
+	__PROD_MODE__  = "__PROD_MODE__"
+
+	// only when running sharded cluster in dev mode, i.e outside k8s
+	// it uniquely identifies process/pod. And will be built in runtime
+	// for other cases, i.e prod-sharded mode
+	__HOST_ID__ = "__HOST_ID__"
+
+	// expected only when running sharded cluster in prod
 	__K8S_LEASE_NAMESAPCE__ = "__K8S_LEASE_NAMESAPCE__"
 	__K8S_LEASE_NAME__      = "__K8S_LEASE_NAME__"
+	__K8S_POD_NAME__        = "__K8S_POD_NAME__"
+	__K8S_SERVICE_NAME__    = "__K8S_SERVICE_NAME__"
 
+	// mode values
 	__SHARDED__    = "sharded"
 	__STANDALONE__ = "standalone"
 	__DEV__        = "dev"
@@ -59,7 +70,7 @@ func runSidecar() {
 }
 
 func runInDevMode() {
-	value := utils.GetEnv(__DEV_MODE__, __SHARDED__)
+	value := utils.GetEnv(__DEV_MODE__, __STANDALONE__)
 
 	switch value {
 	case __SHARDED__:
@@ -106,7 +117,7 @@ func runInProdMode() {
 
 	switch value {
 	case __SHARDED__:
-		fmt.Println("(Check prod mode): Running in `sharded` mode!")
+		log.Infof("(Check prod mode): Running in `sharded` mode!")
 		ctx := context.Background()
 
 		config, err := rest.InClusterConfig()
@@ -114,7 +125,7 @@ func runInProdMode() {
 			panic(err)
 		}
 
-		id := utils.GetEnv(__HOST_ID__, uuid.NewString())
+		id := buildHostNameForK8sShard()
 		lockNamespace := utils.GetEnv(__K8S_LEASE_NAMESAPCE__, "default")
 		lockName := utils.GetEnv(__K8S_LEASE_NAME__, "orange-leader-election-lock")
 
@@ -140,6 +151,14 @@ func runInProdMode() {
 		elector.Run(&ctx)
 
 	case __STANDALONE__:
-		fmt.Println("(Check prod mode): Running in `stadalone` mode!")
+		log.Infof("(Check prod mode): Running in `stadalone` mode!")
 	}
+}
+
+func buildHostNameForK8sShard() string {
+	return fmt.Sprintf("%s.%s.%s.svc.cluster.local",
+		utils.GetEnv(__K8S_POD_NAME__, "", true),
+		utils.GetEnv(__K8S_SERVICE_NAME__, "", true),
+		utils.GetEnv(__K8S_LEASE_NAMESAPCE__, "", true),
+	)
 }
