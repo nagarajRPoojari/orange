@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 	pb "github.com/nagarajRPoojari/orange/pkg/proto/ops"
-	"github.com/nagarajRPoojari/orange/pkg/query"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type CreateOpAdapter struct {
-	Native *query.CreateOp
+	Native *oql.CreateOp
 	Pb     *pb.CreateReq
 }
 
@@ -25,15 +25,15 @@ func (t *CreateOpAdapter) ToProtobuf() *pb.CreateReq {
 	}
 }
 
-func (t *CreateOpAdapter) ToNative() *query.CreateOp {
-	return &query.CreateOp{
+func (t *CreateOpAdapter) ToNative() *oql.CreateOp {
+	return &oql.CreateOp{
 		Document: t.Pb.Document,
 		Schema:   t.Pb.Schema.AsMap(),
 	}
 }
 
 type InsertOpAdapter struct {
-	Native *query.InsertOp
+	Native *oql.InsertOp
 	Pb     *pb.InsertReq
 }
 
@@ -48,15 +48,15 @@ func (t *InsertOpAdapter) ToProtobuf() *pb.InsertReq {
 	}
 }
 
-func (t *InsertOpAdapter) ToNative() *query.InsertOp {
-	return &query.InsertOp{
+func (t *InsertOpAdapter) ToNative() *oql.InsertOp {
+	return &oql.InsertOp{
 		Document: t.Pb.Document,
 		Value:    t.Pb.Value.AsMap(),
 	}
 }
 
 type SelectOpAdapter struct {
-	Native *query.SelectOp
+	Native *oql.SelectOp
 	Pb     *pb.SelectReq
 }
 
@@ -68,8 +68,8 @@ func (t *SelectOpAdapter) ToProtobuf() *pb.SelectReq {
 	}
 }
 
-func (t *SelectOpAdapter) ToNative() *query.SelectOp {
-	return &query.SelectOp{
+func (t *SelectOpAdapter) ToNative() *oql.SelectOp {
+	return &oql.SelectOp{
 		Document: t.Pb.Document,
 		Columns:  t.Pb.Columns,
 		ID:       t.Pb.Id,
@@ -77,7 +77,7 @@ func (t *SelectOpAdapter) ToNative() *query.SelectOp {
 }
 
 type DeleteOpAdapter struct {
-	Native *query.DeleteOp
+	Native *oql.DeleteOp
 	Pb     *pb.DeleteReq
 }
 
@@ -88,8 +88,8 @@ func (t *DeleteOpAdapter) ToProtobuf() *pb.DeleteReq {
 	}
 }
 
-func (t *DeleteOpAdapter) ToNative() *query.DeleteOp {
-	return &query.DeleteOp{
+func (t *DeleteOpAdapter) ToNative() *oql.DeleteOp {
+	return &oql.DeleteOp{
 		Document: t.Pb.Document,
 		ID:       t.Pb.Id,
 	}

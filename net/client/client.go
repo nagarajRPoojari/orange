@@ -7,8 +7,8 @@ import (
 
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/nagarajRPoojari/orange/pkg/adapter"
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 	pb "github.com/nagarajRPoojari/orange/pkg/proto/ops"
-	"github.com/nagarajRPoojari/orange/pkg/query"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -31,7 +31,7 @@ func NewClient(addr string, port int64) *Client {
 	}
 }
 
-func (t *Client) Create(op *query.CreateOp) error {
+func (t *Client) Create(op *oql.CreateOp) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -44,7 +44,7 @@ func (t *Client) Create(op *query.CreateOp) error {
 	return nil
 }
 
-func (t *Client) Insert(op *query.InsertOp) error {
+func (t *Client) Insert(op *oql.InsertOp) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -57,7 +57,7 @@ func (t *Client) Insert(op *query.InsertOp) error {
 	return nil
 }
 
-func (t *Client) Select(op *query.SelectOp) ([]byte, error) {
+func (t *Client) Select(op *oql.SelectOp) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 

@@ -10,7 +10,7 @@ import (
 	"github.com/nagarajRPoojari/orange/internal/errors"
 	"github.com/nagarajRPoojari/orange/internal/types"
 	storage "github.com/nagarajRPoojari/orange/parrot"
-	"github.com/nagarajRPoojari/orange/pkg/query"
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 	"github.com/nagarajRPoojari/orange/pkg/schema"
 )
 
@@ -69,22 +69,22 @@ func NewOrangedb(context context.Context, conf config.Config) *Oragedb {
 
 // ProcessQuery parses and routes a query to the appropriate database operation
 // ProcessQuery is depricated and will be moved out of db.go
-// Orangedb doesn't directly accepts query string, should be parsed outside & passed query.Op
+// Orangedb doesn't directly accepts query string, should be parsed outside & passed oql.Op
 func (t *Oragedb) ProcessQuery(q string) (any, error) {
-	parser := query.NewParser(q)
+	parser := oql.NewParser(q)
 	op, err := parser.Build()
 	if err != nil {
 		return nil, err
 	}
 
 	switch v := op.(type) {
-	case query.CreateOp:
+	case oql.CreateOp:
 		return nil, t.CreateCollection(v)
-	case query.InsertOp:
+	case oql.InsertOp:
 		return nil, t.InsertDoc(v)
-	case query.SelectOp:
+	case oql.SelectOp:
 		return t.GetDoc(v)
-	case query.DeleteOp:
+	case oql.DeleteOp:
 		return nil, t.DeleteDoc(v)
 	}
 
@@ -92,7 +92,7 @@ func (t *Oragedb) ProcessQuery(q string) (any, error) {
 }
 
 // CreateCollection creates a new collection and stores its schema in the catalog
-func (t *Oragedb) CreateCollection(op query.CreateOp) error {
+func (t *Oragedb) CreateCollection(op oql.CreateOp) error {
 	db := t.createDB(op.Document)
 	t.dbMap.LoadOrStore(op.Document, db)
 
@@ -125,7 +125,7 @@ func (t *Oragedb) createDB(dbName string) *storage.Storage[types.ID, *InternalVa
 }
 
 // InsertDoc validates and inserts a document into the target collection.
-func (t *Oragedb) InsertDoc(op query.InsertOp) error {
+func (t *Oragedb) InsertDoc(op oql.InsertOp) error {
 	schema, err := t.schemaHandler.LoadFromCatalog(op.Document)
 	if err != nil {
 		return err
@@ -177,7 +177,7 @@ func (t *Oragedb) InsertDoc(op query.InsertOp) error {
 }
 
 // GetDoc retrieves a document by ID from the specified collection.
-func (t *Oragedb) GetDoc(op query.SelectOp) (map[string]interface{}, error) {
+func (t *Oragedb) GetDoc(op oql.SelectOp) (map[string]interface{}, error) {
 	schema, err := t.schemaHandler.LoadFromCatalog(op.Document)
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func (t *Oragedb) GetDoc(op query.SelectOp) (map[string]interface{}, error) {
 }
 
 // DeleteDoc deletes a document by ID from the specified collection.
-func (t *Oragedb) DeleteDoc(op query.DeleteOp) error {
+func (t *Oragedb) DeleteDoc(op oql.DeleteOp) error {
 	val, ok := t.dbMap.Load(op.Document)
 	if !ok {
 		db := t.createDB(op.Document)

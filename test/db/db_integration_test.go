@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 	"github.com/spf13/viper"
 
 	"github.com/nagarajRPoojari/orange/internal/config"
 	odb "github.com/nagarajRPoojari/orange/internal/db"
 	"github.com/nagarajRPoojari/orange/internal/types"
-	"github.com/nagarajRPoojari/orange/pkg/query"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,9 +59,9 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	assert.NotNil(t, db)
 
 	err := db.CreateCollection(
-		query.CreateOp{
+		oql.CreateOp{
 			Document: "test",
-			Schema: query.Schema(map[string]interface{}{
+			Schema: oql.Schema(map[string]interface{}{
 				"_ID":  map[string]interface{}{"auto_increment": false},
 				"name": "STRING",
 				"age":  map[string]interface{}{"name": "INT8"},
@@ -72,7 +72,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	assert.FileExists(t, path.Join(dir, "catalog", "test"))
 	assert.NoError(t, err)
 	err = db.InsertDoc(
-		query.InsertOp{
+		oql.InsertOp{
 			Document: "test",
 			Value: map[string]interface{}{
 				"_ID":  90102,
@@ -88,7 +88,7 @@ func TestOrangedb_SelectDoc(t *testing.T) {
 	assert.NoError(t, err)
 
 	got, err := db.GetDoc(
-		query.SelectOp{
+		oql.SelectOp{
 			Document: "test",
 			ID:       90102,
 		},
@@ -126,9 +126,9 @@ func TestOrangedb_DeleteDoc(t *testing.T) {
 
 	assert.NotNil(t, db)
 	err := db.CreateCollection(
-		query.CreateOp{
+		oql.CreateOp{
 			Document: "test",
-			Schema: query.Schema(map[string]interface{}{
+			Schema: oql.Schema(map[string]interface{}{
 				"_ID":  map[string]interface{}{"auto_increment": false},
 				"name": "STRING",
 				"age":  map[string]interface{}{"name": "INT8"},
@@ -139,7 +139,7 @@ func TestOrangedb_DeleteDoc(t *testing.T) {
 	assert.FileExists(t, path.Join(dir, "catalog", "test"))
 	assert.NoError(t, err)
 	err = db.InsertDoc(
-		query.InsertOp{
+		oql.InsertOp{
 			Document: "test",
 			Value: map[string]interface{}{
 				"_ID":  int64(90102),
@@ -155,7 +155,7 @@ func TestOrangedb_DeleteDoc(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = db.DeleteDoc(
-		query.DeleteOp{
+		oql.DeleteOp{
 			Document: "test",
 			ID:       int64(90102),
 		},
@@ -163,7 +163,7 @@ func TestOrangedb_DeleteDoc(t *testing.T) {
 
 	assert.NoError(t, err)
 	_, err = db.GetDoc(
-		query.SelectOp{
+		oql.SelectOp{
 			Document: "test",
 			ID:       int64(90102),
 		},
@@ -181,9 +181,9 @@ func TestOragedb_InsertDoc(t *testing.T) {
 	assert.NotNil(t, db)
 
 	err := db.CreateCollection(
-		query.CreateOp{
+		oql.CreateOp{
 			Document: "test",
-			Schema: query.Schema(map[string]interface{}{
+			Schema: oql.Schema(map[string]interface{}{
 				"_ID":  map[string]interface{}{"auto_increment": false},
 				"name": "STRING",
 				"age":  map[string]interface{}{"name": "INT8"},
@@ -194,7 +194,7 @@ func TestOragedb_InsertDoc(t *testing.T) {
 	assert.FileExists(t, path.Join(dir, "catalog", "test"))
 	assert.NoError(t, err)
 	err = db.InsertDoc(
-		query.InsertOp{
+		oql.InsertOp{
 			Document: "test",
 			Value: map[string]interface{}{
 				"_ID":  90102,
@@ -218,7 +218,7 @@ func TestOragedb_CreateCollection(t *testing.T) {
 		conf config.Config
 	}
 	type args struct {
-		op query.CreateOp
+		op oql.CreateOp
 	}
 	tests := []struct {
 		name    string
@@ -230,9 +230,9 @@ func TestOragedb_CreateCollection(t *testing.T) {
 			name:   "valid collection schema",
 			fields: fields{conf: getMockedConfig(tempDir)},
 			args: args{
-				op: query.CreateOp{
+				op: oql.CreateOp{
 					Document: "test",
-					Schema: query.Schema(map[string]interface{}{
+					Schema: oql.Schema(map[string]interface{}{
 						"_ID":  map[string]interface{}{"auto_increment": false},
 						"name": "STRING",
 						"age":  map[string]interface{}{"name": "INT8"},
@@ -245,9 +245,9 @@ func TestOragedb_CreateCollection(t *testing.T) {
 			name:   "invalid collection schema",
 			fields: fields{conf: getMockedConfig(tempDir)},
 			args: args{
-				op: query.CreateOp{
+				op: oql.CreateOp{
 					Document: "test",
-					Schema: query.Schema(map[string]interface{}{
+					Schema: oql.Schema(map[string]interface{}{
 						"_ID":  map[string]interface{}{"auto_increment": false},
 						"name": "KK",
 						"age":  map[string]interface{}{"name": "INT8"},

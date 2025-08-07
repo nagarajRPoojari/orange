@@ -1,4 +1,4 @@
-package query
+package oql
 
 import (
 	"reflect"

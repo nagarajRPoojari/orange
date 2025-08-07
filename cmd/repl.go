@@ -31,7 +31,7 @@ import (
 
 	"github.com/nagarajRPoojari/orange/net/client"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
-	"github.com/nagarajRPoojari/orange/pkg/query"
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 	"github.com/spf13/cobra"
 )
 
@@ -40,21 +40,21 @@ var (
 	Address string
 )
 
-func processQuery(client *client.Client, q string) (any, error) {
-	parser := query.NewParser(q)
+func processoql(client *client.Client, q string) (any, error) {
+	parser := oql.NewParser(q)
 	op, err := parser.Build()
 	if err != nil {
 		return nil, err
 	}
 
 	switch v := op.(type) {
-	case query.CreateOp:
+	case oql.CreateOp:
 		return nil, client.Create(&v)
-	case query.InsertOp:
+	case oql.InsertOp:
 		return nil, client.Insert(&v)
-	case query.SelectOp:
+	case oql.SelectOp:
 		return client.Select(&v)
-	case query.DeleteOp:
+	case oql.DeleteOp:
 		return nil, fmt.Errorf("delete op not implpemented")
 	}
 
@@ -88,7 +88,7 @@ var replCmd = &cobra.Command{
 				break
 			}
 
-			res, err := processQuery(cl, input)
+			res, err := processoql(cl, input)
 			if err != nil {
 				fmt.Printf("%v\n", err)
 			} else {
