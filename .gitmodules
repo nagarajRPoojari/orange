@@ -4,3 +4,6 @@
 [submodule "orangegate"]
 	path = orangegate
 	url = https://github.com/nagarajRPoojari/orangegate.git
+[submodule "helm"]
+	path = helm
+	url = git@github-nagarajRPoojari:nagarajRPoojari/helm.git
