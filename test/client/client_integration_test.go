@@ -7,7 +7,7 @@ import (
 
 	"github.com/nagarajRPoojari/orange/net/client"
 	"github.com/nagarajRPoojari/orange/net/server"
-	"github.com/nagarajRPoojari/orange/pkg/query"
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,9 +19,9 @@ func TestClient(t *testing.T) {
 	cl := client.NewClient("localhost", 52001)
 
 	err := cl.Create(
-		&query.CreateOp{
+		&oql.CreateOp{
 			Document: "test",
-			Schema: query.Schema(map[string]interface{}{
+			Schema: oql.Schema(map[string]interface{}{
 				"_ID":  map[string]interface{}{"auto_increment": false},
 				"name": "STRING",
 				"age":  map[string]interface{}{"name": "INT8"},
@@ -31,7 +31,7 @@ func TestClient(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = cl.Insert(
-		&query.InsertOp{
+		&oql.InsertOp{
 			Document: "test",
 			Value: map[string]interface{}{
 				"_ID":  90102,
@@ -45,7 +45,7 @@ func TestClient(t *testing.T) {
 	assert.NoError(t, err)
 
 	got, err := cl.Select(
-		&query.SelectOp{
+		&oql.SelectOp{
 			Document: "test",
 			ID:       90102,
 		},

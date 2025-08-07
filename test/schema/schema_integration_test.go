@@ -3,7 +3,7 @@ package schema_test
 import (
 	"testing"
 
-	"github.com/nagarajRPoojari/orange/pkg/query"
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 	"github.com/nagarajRPoojari/orange/pkg/schema"
 	"github.com/stretchr/testify/assert"
 )
@@ -11,7 +11,7 @@ import (
 func TestSchemaHandler_LoadFromCatalog(t *testing.T) {
 	dir := t.TempDir()
 
-	docName, wanted := "user", query.Schema(map[string]interface{}{
+	docName, wanted := "user", oql.Schema(map[string]interface{}{
 		"_ID":  map[string]interface{}{"auto_increment": false},
 		"name": "STRING",
 		"age":  map[string]interface{}{"name": "INT8"},

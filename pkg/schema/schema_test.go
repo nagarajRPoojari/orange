@@ -4,19 +4,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nagarajRPoojari/orange/pkg/query"
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 )
 
 func TestSchemaHandler_Verifier(t *testing.T) {
 	tests := []struct {
 		name    string
-		schema  query.Schema
+		schema  oql.Schema
 		wantErr bool
 		errSub  string
 	}{
 		{
 			name: "Valid schema with _ID, name, age",
-			schema: query.Schema(map[string]interface{}{
+			schema: oql.Schema(map[string]interface{}{
 				"_ID":  map[string]interface{}{"auto_increment": false},
 				"name": "DATETIME",
 				"age":  map[string]interface{}{"name": "BYTE"},
@@ -25,7 +25,7 @@ func TestSchemaHandler_Verifier(t *testing.T) {
 		},
 		{
 			name: "unsupported type COUNTRY",
-			schema: query.Schema(map[string]interface{}{
+			schema: oql.Schema(map[string]interface{}{
 				"name": "COUNTRY",
 			}),
 			wantErr: true,
@@ -33,14 +33,14 @@ func TestSchemaHandler_Verifier(t *testing.T) {
 		},
 		{
 			name: "Only _ID is present",
-			schema: query.Schema(map[string]interface{}{
+			schema: oql.Schema(map[string]interface{}{
 				"_ID": map[string]interface{}{"auto_increment": true},
 			}),
 			wantErr: false,
 		},
 		{
 			name: "Invalid _ID type",
-			schema: query.Schema(map[string]interface{}{
+			schema: oql.Schema(map[string]interface{}{
 				"_ID": "STRING", // should be map
 			}),
 			wantErr: true,
@@ -48,7 +48,7 @@ func TestSchemaHandler_Verifier(t *testing.T) {
 		},
 		{
 			name: "value provided instead of dtype",
-			schema: query.Schema(map[string]interface{}{
+			schema: oql.Schema(map[string]interface{}{
 				"active": 123, // invalid type, should be string or map
 			}),
 			wantErr: true,
@@ -78,7 +78,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 	field := fields{opts: &SchemaHandlerOpts{Dir: t.TempDir()}}
 	type args struct {
 		docName string
-		schema  query.Schema
+		schema  oql.Schema
 	}
 	tests := []struct {
 		name    string
@@ -90,7 +90,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 			name:   "valid schema and doc name",
 			fields: field,
 			args: args{docName: "test-0",
-				schema: query.Schema(map[string]interface{}{
+				schema: oql.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": false},
 					"name": "DATETIME",
 					"age":  map[string]interface{}{"name": "BYTE"},
@@ -102,7 +102,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 			name:   "duplicate docName",
 			fields: field,
 			args: args{docName: "test-0",
-				schema: query.Schema(map[string]interface{}{
+				schema: oql.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": false},
 					"name": "INT",
 					"age":  map[string]interface{}{"name": "BYTE"},
@@ -114,7 +114,7 @@ func TestSchemaHandler_SavetoCatalog(t *testing.T) {
 			name:   "invalid schema",
 			fields: field,
 			args: args{docName: "test-1",
-				schema: query.Schema(map[string]interface{}{
+				schema: oql.Schema(map[string]interface{}{
 					"_ID": map[string]interface{}{
 						"auto_increment": "int",
 					}, // auto_increment should be bool
@@ -155,7 +155,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 			name:   "valid data",
 			fields: fields{},
 			args: args{
-				schema: query.Schema(map[string]interface{}{
+				schema: oql.Schema(map[string]interface{}{
 					"_ID":  map[string]interface{}{"auto_increment": false},
 					"name": "STRING",
 					"age":  map[string]interface{}{"name": "INT8"},
@@ -174,7 +174,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 			name:   "invalid decimal format",
 			fields: fields{},
 			args: args{
-				schema: query.Schema(map[string]interface{}{
+				schema: oql.Schema(map[string]interface{}{
 					"young": "DECIMAL",
 					"old":   "BOOL",
 					"name":  "INT",
@@ -192,7 +192,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 			name:   "valid with explicit type casting",
 			fields: fields{},
 			args: args{
-				schema: query.Schema(map[string]interface{}{
+				schema: oql.Schema(map[string]interface{}{
 					"young": "DECIMAL",
 					"old":   "BOOL",
 					"name":  "INT",
@@ -210,7 +210,7 @@ func TestSchemaHandler_VerifyAndCastData(t *testing.T) {
 			name:   "invalid to typecast",
 			fields: fields{},
 			args: args{
-				schema: query.Schema(map[string]interface{}{
+				schema: oql.Schema(map[string]interface{}{
 					"young": "INT",
 					"old":   "BOOL",
 				}),

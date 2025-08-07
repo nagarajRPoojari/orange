@@ -9,7 +9,7 @@ import (
 	"github.com/nagarajRPoojari/orange/internal/types"
 	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/nagarajRPoojari/orange/pkg/internal/errors"
-	"github.com/nagarajRPoojari/orange/pkg/query"
+	"github.com/nagarajRPoojari/orange/pkg/oql"
 )
 
 type SchemaHandlerOpts struct {
@@ -19,7 +19,7 @@ type SchemaHandlerOpts struct {
 // SchemaHandler manages document schemas, including caching and validation.
 type SchemaHandler struct {
 	// cache of loaded schema
-	cache map[string]query.Schema
+	cache map[string]oql.Schema
 
 	opts *SchemaHandlerOpts
 }
@@ -28,14 +28,14 @@ type SchemaHandler struct {
 // Initializes an empty in-memory schema cache
 func NewSchemaHandler(opts *SchemaHandlerOpts) *SchemaHandler {
 	return &SchemaHandler{
-		cache: map[string]query.Schema{},
+		cache: map[string]oql.Schema{},
 		opts:  opts,
 	}
 }
 
 // VerifySchema checks the validity of a given schema.
 // Validates the presence and type of _ID and all nested fields.
-func (t *SchemaHandler) VerifySchema(schema query.Schema) error {
+func (t *SchemaHandler) VerifySchema(schema oql.Schema) error {
 	// validating _ID if provided
 	_, err := loadSchemaId(schema)
 	if err != nil {
@@ -45,7 +45,7 @@ func (t *SchemaHandler) VerifySchema(schema query.Schema) error {
 	return recursiveSchemaVerifier(schema)
 }
 
-func loadSchemaId(schema query.Schema) (map[string]interface{}, error) {
+func loadSchemaId(schema oql.Schema) (map[string]interface{}, error) {
 	var id_map map[string]interface{}
 	if _id := schema["_ID"]; _id != nil {
 		id_map, ok := _id.(map[string]interface{})
@@ -92,7 +92,7 @@ func recursiveSchemaVerifier(schema map[string]interface{}) error {
 
 // SavetoCatalog saves schema to catalog directory,
 // might throw error if duplicate document name found
-func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error {
+func (t *SchemaHandler) SavetoCatalog(docName string, schema oql.Schema) error {
 	if err := t.VerifySchema(schema); err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (t *SchemaHandler) SavetoCatalog(docName string, schema query.Schema) error
 
 // LoadFromCatalog loads schema from catalog
 // @todo: cache loaded schema
-func (t *SchemaHandler) LoadFromCatalog(docName string) (query.Schema, error) {
+func (t *SchemaHandler) LoadFromCatalog(docName string) (oql.Schema, error) {
 	if schema, ok := t.cache[docName]; ok {
 		return schema, nil
 	}
@@ -134,7 +134,7 @@ func (t *SchemaHandler) LoadFromCatalog(docName string) (query.Schema, error) {
 		return nil, errors.SchemaError("failed to load schema")
 	}
 
-	var schema query.Schema
+	var schema oql.Schema
 	if err := json.Unmarshal(data, &schema); err != nil {
 		return nil, errors.SchemaJSONUnmarshallError("%v", err)
 	}

@@ -1,4 +1,4 @@
-package query
+package oql
 
 // JSONString represents a raw JSON string input.
 type JSONString string
