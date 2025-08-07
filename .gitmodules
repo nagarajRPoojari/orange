@@ -1,3 +1,6 @@
 [submodule "orangectl"]
 	path = orangectl
 	url = git@github.com:nagarajRPoojari/orangectl.git
+[submodule "orangegate"]
+	path = orangegate
+	url = https://github.com/nagarajRPoojari/orangegate.git

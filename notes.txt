@@ -1,3 +1,0 @@
-wait for pod/shards up in operator
-
-imagePullPolicy = Never because kind can't pull anything, need to preload 
