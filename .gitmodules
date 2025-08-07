@@ -6,4 +6,4 @@
 	url = https://github.com/nagarajRPoojari/orangegate.git
 [submodule "helm"]
 	path = helm
-	url = git@github-nagarajRPoojari:nagarajRPoojari/helm.git
+	url = git@github.com:nagarajRPoojari/helm.git
