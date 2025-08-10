@@ -42,11 +42,21 @@ const (
 	all    = "all"
 )
 
+// ReplicationOpts holds configuration options for data replication behavior.
 type ReplicationOpts struct {
+	// TurnOnReplication indicates whether replication is enabled.
 	TurnOnReplication bool
-	ReplicationType   ReplicationType
-	AckLevel          AckLevel
-	Replicas          int
+
+	// ReplicationType specifies the type of replication strategy used (e.g., synchronous, asynchronous).
+	ReplicationType ReplicationType
+
+	// AckLevel defines the acknowledgement level required before confirming write success.
+	AckLevel AckLevel
+
+	// Replicas is the number of replicas involved in the replication.
+	Replicas int
+
+	// replicaClientList stores client connections to the replicas (unexported to keep internal).
 	replicaCLientList []*client.Client
 }
 
@@ -92,6 +102,7 @@ func (t *Server) Stop() {
 
 func (t *OpsServer) Create(ctx context.Context, req *pb.CreateReq) (*pb.CreatRes, error) {
 	copAdapter := &adapter.CreateOpAdapter{Pb: req}
+	// create quries are inherenty broadcasted to all node so no routing to replicas again
 	op := copAdapter.ToNative()
 	if err := t.db.CreateCollection(*op); err != nil {
 		return nil, err
@@ -102,6 +113,10 @@ func (t *OpsServer) Create(ctx context.Context, req *pb.CreateReq) (*pb.CreatRes
 func (t *OpsServer) Insert(ctx context.Context, req *pb.InsertReq) (*pb.InsertRes, error) {
 	insertAdapter := &adapter.InsertOpAdapter{Pb: req}
 	op := insertAdapter.ToNative()
+
+	// if replication is turned on call secondary inserts on replicas
+	// @todo: based on ack level decide whether to commit or abort
+	//        yhea, commit & abort not supported yet
 	if t.replOpts.TurnOnReplication {
 		for _, cl := range t.replOpts.replicaCLientList {
 			if err := cl.SecondaryInsert(op); err != nil {
@@ -117,6 +132,7 @@ func (t *OpsServer) Insert(ctx context.Context, req *pb.InsertReq) (*pb.InsertRe
 	return &pb.InsertRes{Status: true}, nil
 }
 
+// SecondaryInsert are called by primary replicas & it should not call replication
 func (t *OpsServer) SecondaryInsert(ctx context.Context, req *pb.InsertReq) (*pb.InsertRes, error) {
 	insertAdapter := &adapter.InsertOpAdapter{Pb: req}
 	op := insertAdapter.ToNative()
@@ -129,6 +145,10 @@ func (t *OpsServer) SecondaryInsert(ctx context.Context, req *pb.InsertReq) (*pb
 func (t *OpsServer) Delete(ctx context.Context, req *pb.DeleteReq) (*pb.DeleteRes, error) {
 	deleteAdapter := &adapter.DeleteOpAdapter{Pb: req}
 	op := deleteAdapter.ToNative()
+
+	// if replication is turned on call secondary deletes on replicas
+	// @todo: based on ack level decide whether to commit or abort
+	//        yhea, commit & abort not supported yet
 	if t.replOpts.TurnOnReplication {
 		for _, cl := range t.replOpts.replicaCLientList {
 			if err := cl.SecondaryDelete(op); err != nil {
@@ -142,6 +162,7 @@ func (t *OpsServer) Delete(ctx context.Context, req *pb.DeleteReq) (*pb.DeleteRe
 	return &pb.DeleteRes{Status: true}, nil
 }
 
+// SecondaryDelete are called by primary replica & it should not call replication
 func (t *OpsServer) SecondaryDelete(ctx context.Context, req *pb.DeleteReq) (*pb.DeleteRes, error) {
 	deleteAdapter := &adapter.DeleteOpAdapter{Pb: req}
 	op := deleteAdapter.ToNative()
