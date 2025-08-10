@@ -19,10 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Ops_Create_FullMethodName = "/ops.Ops/Create"
-	Ops_Insert_FullMethodName = "/ops.Ops/Insert"
-	Ops_Delete_FullMethodName = "/ops.Ops/Delete"
-	Ops_Select_FullMethodName = "/ops.Ops/Select"
+	Ops_Create_FullMethodName          = "/ops.Ops/Create"
+	Ops_Insert_FullMethodName          = "/ops.Ops/Insert"
+	Ops_SecondaryInsert_FullMethodName = "/ops.Ops/SecondaryInsert"
+	Ops_Delete_FullMethodName          = "/ops.Ops/Delete"
+	Ops_SecondaryDelete_FullMethodName = "/ops.Ops/SecondaryDelete"
+	Ops_Select_FullMethodName          = "/ops.Ops/Select"
 )
 
 // OpsClient is the client API for Ops service.
@@ -31,7 +33,9 @@ const (
 type OpsClient interface {
 	Create(ctx context.Context, in *CreateReq, opts ...grpc.CallOption) (*CreatRes, error)
 	Insert(ctx context.Context, in *InsertReq, opts ...grpc.CallOption) (*InsertRes, error)
+	SecondaryInsert(ctx context.Context, in *InsertReq, opts ...grpc.CallOption) (*InsertRes, error)
 	Delete(ctx context.Context, in *DeleteReq, opts ...grpc.CallOption) (*DeleteRes, error)
+	SecondaryDelete(ctx context.Context, in *DeleteReq, opts ...grpc.CallOption) (*DeleteRes, error)
 	Select(ctx context.Context, in *SelectReq, opts ...grpc.CallOption) (*SelectRes, error)
 }
 
@@ -63,10 +67,30 @@ func (c *opsClient) Insert(ctx context.Context, in *InsertReq, opts ...grpc.Call
 	return out, nil
 }
 
+func (c *opsClient) SecondaryInsert(ctx context.Context, in *InsertReq, opts ...grpc.CallOption) (*InsertRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InsertRes)
+	err := c.cc.Invoke(ctx, Ops_SecondaryInsert_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *opsClient) Delete(ctx context.Context, in *DeleteReq, opts ...grpc.CallOption) (*DeleteRes, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteRes)
 	err := c.cc.Invoke(ctx, Ops_Delete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *opsClient) SecondaryDelete(ctx context.Context, in *DeleteReq, opts ...grpc.CallOption) (*DeleteRes, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteRes)
+	err := c.cc.Invoke(ctx, Ops_SecondaryDelete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +113,9 @@ func (c *opsClient) Select(ctx context.Context, in *SelectReq, opts ...grpc.Call
 type OpsServer interface {
 	Create(context.Context, *CreateReq) (*CreatRes, error)
 	Insert(context.Context, *InsertReq) (*InsertRes, error)
+	SecondaryInsert(context.Context, *InsertReq) (*InsertRes, error)
 	Delete(context.Context, *DeleteReq) (*DeleteRes, error)
+	SecondaryDelete(context.Context, *DeleteReq) (*DeleteRes, error)
 	Select(context.Context, *SelectReq) (*SelectRes, error)
 	mustEmbedUnimplementedOpsServer()
 }
@@ -107,8 +133,14 @@ func (UnimplementedOpsServer) Create(context.Context, *CreateReq) (*CreatRes, er
 func (UnimplementedOpsServer) Insert(context.Context, *InsertReq) (*InsertRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Insert not implemented")
 }
+func (UnimplementedOpsServer) SecondaryInsert(context.Context, *InsertReq) (*InsertRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SecondaryInsert not implemented")
+}
 func (UnimplementedOpsServer) Delete(context.Context, *DeleteReq) (*DeleteRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedOpsServer) SecondaryDelete(context.Context, *DeleteReq) (*DeleteRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SecondaryDelete not implemented")
 }
 func (UnimplementedOpsServer) Select(context.Context, *SelectReq) (*SelectRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Select not implemented")
@@ -170,6 +202,24 @@ func _Ops_Insert_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Ops_SecondaryInsert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InsertReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpsServer).SecondaryInsert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Ops_SecondaryInsert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpsServer).SecondaryInsert(ctx, req.(*InsertReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Ops_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteReq)
 	if err := dec(in); err != nil {
@@ -184,6 +234,24 @@ func _Ops_Delete_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OpsServer).Delete(ctx, req.(*DeleteReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Ops_SecondaryDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpsServer).SecondaryDelete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Ops_SecondaryDelete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpsServer).SecondaryDelete(ctx, req.(*DeleteReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -222,8 +290,16 @@ var Ops_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Ops_Insert_Handler,
 		},
 		{
+			MethodName: "SecondaryInsert",
+			Handler:    _Ops_SecondaryInsert_Handler,
+		},
+		{
 			MethodName: "Delete",
 			Handler:    _Ops_Delete_Handler,
+		},
+		{
+			MethodName: "SecondaryDelete",
+			Handler:    _Ops_SecondaryDelete_Handler,
 		},
 		{
 			MethodName: "Select",

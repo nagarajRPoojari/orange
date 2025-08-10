@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/nagarajRPoojari/orange/pkg/oql"
@@ -17,6 +18,8 @@ type CreateOpAdapter struct {
 func (t *CreateOpAdapter) ToProtobuf() *pb.CreateReq {
 	schemaPb, err := structpb.NewStruct(t.Native.Schema)
 	if err != nil {
+		fmt.Printf("PROBLEM HERE %v\n", err)
+		fmt.Printf("::: %v\n", t.Native)
 		log.Fatalf("failed to create structpb.Struct: %v", err)
 	}
 	return &pb.CreateReq{

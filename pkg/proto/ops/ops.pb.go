@@ -84,7 +84,7 @@ func (x *SelectReq) GetId() int64 {
 
 type SelectRes struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"` // will be in json bytes
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -439,11 +439,13 @@ const file_pkg_proto_ops_proto_rawDesc = "" +
 	"\bdocument\x18\x01 \x01(\tR\bdocument\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\x03R\x02id\"#\n" +
 	"\tDeleteRes\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\bR\x06status2\xac\x01\n" +
+	"\x06status\x18\x01 \x01(\bR\x06status2\x92\x02\n" +
 	"\x03Ops\x12'\n" +
 	"\x06Create\x12\x0e.ops.CreateReq\x1a\r.ops.CreatRes\x12(\n" +
-	"\x06Insert\x12\x0e.ops.InsertReq\x1a\x0e.ops.InsertRes\x12(\n" +
-	"\x06Delete\x12\x0e.ops.DeleteReq\x1a\x0e.ops.DeleteRes\x12(\n" +
+	"\x06Insert\x12\x0e.ops.InsertReq\x1a\x0e.ops.InsertRes\x121\n" +
+	"\x0fSecondaryInsert\x12\x0e.ops.InsertReq\x1a\x0e.ops.InsertRes\x12(\n" +
+	"\x06Delete\x12\x0e.ops.DeleteReq\x1a\x0e.ops.DeleteRes\x121\n" +
+	"\x0fSecondaryDelete\x12\x0e.ops.DeleteReq\x1a\x0e.ops.DeleteRes\x12(\n" +
 	"\x06Select\x12\x0e.ops.SelectReq\x1a\x0e.ops.SelectResB\x0fZ\rpkg/proto/opsb\x06proto3"
 
 var (
@@ -475,14 +477,18 @@ var file_pkg_proto_ops_proto_depIdxs = []int32{
 	8, // 1: ops.CreateReq.schema:type_name -> google.protobuf.Struct
 	4, // 2: ops.Ops.Create:input_type -> ops.CreateReq
 	2, // 3: ops.Ops.Insert:input_type -> ops.InsertReq
-	6, // 4: ops.Ops.Delete:input_type -> ops.DeleteReq
-	0, // 5: ops.Ops.Select:input_type -> ops.SelectReq
-	5, // 6: ops.Ops.Create:output_type -> ops.CreatRes
-	3, // 7: ops.Ops.Insert:output_type -> ops.InsertRes
-	7, // 8: ops.Ops.Delete:output_type -> ops.DeleteRes
-	1, // 9: ops.Ops.Select:output_type -> ops.SelectRes
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
+	2, // 4: ops.Ops.SecondaryInsert:input_type -> ops.InsertReq
+	6, // 5: ops.Ops.Delete:input_type -> ops.DeleteReq
+	6, // 6: ops.Ops.SecondaryDelete:input_type -> ops.DeleteReq
+	0, // 7: ops.Ops.Select:input_type -> ops.SelectReq
+	5, // 8: ops.Ops.Create:output_type -> ops.CreatRes
+	3, // 9: ops.Ops.Insert:output_type -> ops.InsertRes
+	3, // 10: ops.Ops.SecondaryInsert:output_type -> ops.InsertRes
+	7, // 11: ops.Ops.Delete:output_type -> ops.DeleteRes
+	7, // 12: ops.Ops.SecondaryDelete:output_type -> ops.DeleteRes
+	1, // 13: ops.Ops.Select:output_type -> ops.SelectRes
+	8, // [8:14] is the sub-list for method output_type
+	2, // [2:8] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
 	2, // [2:2] is the sub-list for extension extendee
 	0, // [0:2] is the sub-list for field type_name

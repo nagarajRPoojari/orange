@@ -7,7 +7,9 @@ option go_package = "pkg/proto/ops";
 service Ops {
   rpc Create (CreateReq) returns (CreatRes);
   rpc Insert (InsertReq) returns (InsertRes);
+  rpc SecondaryInsert (InsertReq) returns (InsertRes);
   rpc Delete (DeleteReq) returns (DeleteRes);
+  rpc SecondaryDelete (DeleteReq) returns (DeleteRes);
   rpc Select (SelectReq) returns (SelectRes);
 }
 

@@ -12,7 +12,7 @@ import (
 )
 
 func TestClient(t *testing.T) {
-	dbServer := server.NewServer("localhost", 52001)
+	dbServer := server.NewServer("localhost", 52001, &server.ReplicationOpts{})
 	go dbServer.Run()
 
 	time.Sleep(2 * time.Second)
