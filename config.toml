@@ -1,7 +1,7 @@
 directory = "./temp"
 
 [memtable]
-threshold = 2048  # 2kb
+threshold = 4194304  
 queue_hard_limit = 10
 queue_soft_limit = 6
 flush_time_interval = "1s"
@@ -12,7 +12,7 @@ wal_writer_buffer_size = 8192
 
 [compaction]
 turn_on = true
-level0_max_size_in_bytes = 2048  # 2kb
+level0_max_size_in_bytes = 8194304 
 max_size_growth_factor = 10
 time_interval = "1s"
 wal_time_interval = "1s"

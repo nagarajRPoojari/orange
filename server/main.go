@@ -52,6 +52,7 @@ func Start(addr string, port int64) {
 	case __DEV__:
 		runInDevMode(addr, port)
 	case __PROD__:
+		log.Disable()
 		runInProdMode(addr, port)
 	}
 }
