@@ -37,11 +37,67 @@ go install github.com/nagarajRPoojari/orange@latest
 kubectl apply -f https://raw.githubusercontent.com/nagarajRPoojari/orangectl/main/dist/install.yaml
 ```
 > take a look at sample file [orangectl/config/samples/ctl_v1alpha1_orangectl.yaml](https://github.com/nagarajRPoojari/orangectl/config/samples/ctl_v1alpha1_orangectl.yaml)
+
+```yaml
+apiVersion: ctl.orangectl.orange.db/v1alpha1
+kind: OrangeCtl
+metadata:
+  name: orangectl-sample
+  labels:
+    app.kubernetes.io/name: orangectl
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  namespace: default
+  router:
+    name: router
+    labels:
+      app: orange-router
+      tier: control
+    image: np137270/gateway:latest
+    port: 8000
+    config:
+      ROUTING_MODE: "hash"
+      LOG_LEVEL: "info"
+
+  shard:
+    name: shard
+    labels:
+      app: orange-shard
+      tier: data
+    image: np137270/orange:latest
+    count: 2                # Number of shards
+    replicas: 2             # Replicas per shard
+    port: 52001
+    config:
+      STORAGE_PATH: "/app/data"
+      CACHE_ENABLED: "true"
+
+```
 ```
 kubectl apply -f orangedb.yaml
 ```
+```
+kubectl port-forward svc/router 8000:8000
+```
+Execute few test queries
+```sh
+echo "creating a schema"
+curl -X POST http://localhost:8000/  \
+     -H "Content-Type: application/json" \
+     -d '{"query": "create document test {\"name\":\"STRING\"}"}'
 
+echo "Inserting documents from ID 1 to 20..."
+for i in $(seq 1 20); do
+  curl -s -X POST http://localhost:8000/ \
+       -H "Content-Type: application/json" \
+       -d "{\"query\": \"insert value into test  {\\\"_ID\\\": $i, \\\"name\\\": \\\"hello-$i\\\"}\"}"
+done
 
+echo "search a sample doc with id = 13"
+curl -X POST http://localhost:8000/  \
+     -H "Content-Type: application/json" \
+     -d '{"query": "select * from test where _ID = 13"}'
+```
 # Play with orangedb
 ```
 go install github.com/nagarajRPoojari/orange@latest
