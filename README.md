@@ -32,6 +32,16 @@ go install github.com/nagarajRPoojari/orange@latest
 ```
 
 ## Cluster
+
+> pull all needed images
+> > You need to pull all nessessary images mannualy and load to cluster if you are using Kind, minikube etc..
+```
+docker pull np137270/orange
+docker pull np137270/orangectl
+docker pull np137270/orangegate
+docker pull curlimages/curl #Optional: to run e2e tests
+```
+
 > deploy orangedb reconciler
 ```
 kubectl apply -f https://raw.githubusercontent.com/nagarajRPoojari/orangectl/main/dist/install.yaml
