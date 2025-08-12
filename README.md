@@ -6,7 +6,7 @@
 > It draws inspiration from systems like Cassandra, MongoDB, LevelDB, RocksDB, Pebble, CockroachDB, and many others
 > The primary goal of this project is to explore and learn the vast and evolving concepts of distributed storage systems.
 
-### [Orangegate](https://github.com/nagarajRPoojari/gateway)
+### [Orangegate](https://github.com/nagarajRPoojari/orangegate)
 ##### Proxy behind cluster to manage shards & route queries
 ### [Orangectl](https://github.com/nagarajRPoojari/orangectl)
 ##### k8s operator to manager cluster
@@ -36,7 +36,7 @@ go install github.com/nagarajRPoojari/orange@latest
 ```
 kubectl apply -f https://raw.githubusercontent.com/nagarajRPoojari/orangectl/main/dist/install.yaml
 ```
-> take a look at sample file [orangectl/config/samples/ctl_v1alpha1_orangectl.yaml](https://github.com/nagarajRPoojari/orangectl/config/samples/ctl_v1alpha1_orangectl.yaml)
+> take a look at sample file [orangectl/config/samples/ctl_v1alpha1_orangectl.yaml](https://github.com/nagarajRPoojari/orangectl/tree/main/config/samples/ctl_v1alpha1_orangectl.yaml)
 
 ```yaml
 apiVersion: ctl.orangectl.orange.db/v1alpha1
