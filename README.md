@@ -3,11 +3,17 @@
 
 > [!NOTE]  
 > orange is a lightweight, fast, distributed noSQL db.
-> It draws inspiration from systems like Cassandra, MongoDB, LevelDB, RocksDB, Pebble, CockroachDB, and many others
+> It draws inspiration from systems like Cassandra, MongoDB, LevelDB, RocksDB, Pebble, CockroachDB, and many others.
 > The primary goal of this project is to explore and learn the vast and evolving concepts of distributed storage systems.
 
 ## Benchmark
 To see how `orange` performs checkout [benchmark](https://github.com/nagarajRPoojari/orange/blob/main/BENCHMARK.md)
+
+## Load test your cluster with k6
+```
+k6 run k6/stress_test.js
+k6 run k6/load_test.js
+```
 
 ### [Orangegate](https://github.com/nagarajRPoojari/orangegate)
 ##### Proxy behind cluster to manage shards & route queries
@@ -41,7 +47,7 @@ go install github.com/nagarajRPoojari/orange@latest
 ```
 docker pull np137270/orange
 docker pull np137270/orangectl
-docker pull np137270/orangegate
+docker pull np137270/gateway
 docker pull curlimages/curl #Optional: to run e2e tests
 ```
 
