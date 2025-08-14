@@ -6,6 +6,9 @@
 > It draws inspiration from systems like Cassandra, MongoDB, LevelDB, RocksDB, Pebble, CockroachDB, and many others
 > The primary goal of this project is to explore and learn the vast and evolving concepts of distributed storage systems.
 
+## Benchmark
+To see how `orange` performs checkout [benchmark](https://github.com/nagarajRPoojari/orange/blob/main/BENCHMARK.md)
+
 ### [Orangegate](https://github.com/nagarajRPoojari/orangegate)
 ##### Proxy behind cluster to manage shards & route queries
 ### [Orangectl](https://github.com/nagarajRPoojari/orangectl)
