@@ -16,9 +16,9 @@ k6 run k6/load_test.js
 ```
 
 ### [Orangegate](https://github.com/nagarajRPoojari/orangegate)
-##### Proxy behind cluster to manage shards & route queries
+##### Stateless proxy behind cluster to route queries
 ### [Orangectl](https://github.com/nagarajRPoojari/orangectl)
-##### k8s operator to manager cluster
+##### k8s operator to manage all cluster resources
 
 ## [orangedb](https://github.com/nagarajRPoojari/orange)
 - [x] Stores key-doc pair, doc is jsonlike
