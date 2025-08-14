@@ -10,7 +10,7 @@ import (
 	"context"
 	"os"
 	"runtime/pprof"
-	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -25,24 +25,21 @@ import (
 
 const MILLION = 10_00_000
 
-// BenchmarkMemtable_Read benchmarks concurrent reads
+// BenchmarkParrot_Read benchmarks concurrent reads
 // after flushing a large number of entries to disk-backed memtables.
 //
-//   - sst/memtable size is set to 2kb
+//   - sst/memtable size is set to 2MB
 //   - WAL is disabled
 //   - cache & manifest sync() are enabled
-//   - limits concurrent read threads to 5000 to prevent lock starvation
-func BenchmarkMemtable_Read(t *testing.B) {
+func BenchmarkParrot_Read(b *testing.B) {
 	log.Disable()
 
 	dbName := "test"
-
-	tempDir := "."
+	tempDir := b.TempDir()
 
 	const MEMTABLE_THRESHOLD = 1024 * 4 * 1024
-	const MAX_CONCURRENT_READ_ROUTINES = 500
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	b.Cleanup(cancel)
 
 	db := storage.NewStorage[types.IntKey, *types.IntValue](
 		dbName,
@@ -64,65 +61,63 @@ func BenchmarkMemtable_Read(t *testing.B) {
 			MaxSizeInBytesGrowthFactor:    2,
 		},
 	)
-
-	d := types.IntValue{V: 0}
-
-	multiples := 10
-	totalOps := int(MEMTABLE_THRESHOLD/d.SizeOf()) * multiples
-
-	for i := range totalOps {
+	for i := range b.N {
 		db.Put(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
 
 	time.Sleep(1 * time.Second)
-	wg := sync.WaitGroup{}
+	var totalLatencyNs int64
 
 	start := time.Now()
-	ticket := make(chan struct{}, MAX_CONCURRENT_READ_ROUTINES)
-	for i := 0; i < totalOps; i++ {
-		wg.Add(1)
-
-		ticket <- struct{}{} // acquire ticket
-		go func(i int) {
-			defer func() {
-				<-ticket // release ticket
-				wg.Done()
-			}()
-
+	b.ResetTimer()
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			i := RandomKey(0, b.N)
+			start := time.Now()
 			readStatus := db.Get(types.IntKey{K: i})
 			v := types.IntValue{V: int32(i)}
+			elapsed := time.Since(start).Nanoseconds()
+			atomic.AddInt64(&totalLatencyNs, elapsed)
 			if readStatus.Err != nil || *readStatus.Value != v {
-				t.Errorf("Expected %v, got %v", v, readStatus)
+				b.Errorf("Expected %v, got %v", v, readStatus)
 			}
-		}(i)
-	}
+		}
+	})
 
-	wg.Wait()
-	t.Logf("total ops = %d", totalOps)
+	payloadSize := 16
 	elapsed := time.Since(start)
+	opsPerSec := float64(b.N) / elapsed.Seconds()
+	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000_000
 
-	opsPerSec := float64(totalOps) / elapsed.Seconds()
-	t.Logf("Total time taken: %v, Ops/sec: %.2fM", elapsed, opsPerSec/MILLION)
-
+	BenchmarkReport{
+		TotalOps:                   b.N,
+		PayloadSize:                payloadSize, // 16 bytes
+		TotalBytesTransferred:      float64(b.N * payloadSize),
+		TotalTimeTaken:             elapsed.Seconds(),
+		OpsPerSec:                  opsPerSec,
+		MegaBytesTransferredPerSec: float64(b.N*payloadSize) / elapsed.Seconds(),
+		AverageLatency:             avgLatencyMs,
+	}.Dump("benchmark-parrot-read.json")
 	dumpGoroutines()
 }
 
-// BenchmarkMemtable_Write_With_WAL benchmarks serial writes
+// BenchmarkParrot_Write_With_WAL benchmarks serial writes
 // with WAL turned on
 //
 //   - sst/memtable size is set to 2MB
 //   - WAL is enabled
 //   - cache & manifest sync() are enabled
-func BenchmarkMemtable_Write_With_WAL(t *testing.B) {
+func BenchmarkParrot_Write_With_WAL(b *testing.B) {
 	log.Disable()
 
 	const MEMTABLE_THRESHOLD = 1024 * 2 * 1024
-	temp := "test"
+	temp := b.TempDir()
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: temp})
 	mf.Load()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	b.Cleanup(cancel)
 
 	mf.SyncLoop(ctx)
 
@@ -139,44 +134,48 @@ func BenchmarkMemtable_Write_With_WAL(t *testing.B) {
 			WALWriterBufferSize: conf.DefaultWALEventBufferSize,
 			FlushTimeInterval:   1000 * time.Millisecond,
 		})
-	d := types.IntValue{V: 0}
 
-	multiples := 10
-	totalOps := int(MEMTABLE_THRESHOLD/d.SizeOf()) * multiples
-
+	var totalLatencyNs int64
 	start := time.Now()
-
-	for i := range totalOps {
+	b.ResetTimer()
+	for i := range b.N {
 		mts.Write(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
-
-	t.Logf("total ops = %d", totalOps)
 	elapsed := time.Since(start)
-	opsPerSec := float64(totalOps) / elapsed.Seconds()
-	t.Logf("Total time taken: %v, Ops/sec: %.2fM", elapsed, opsPerSec/MILLION)
+	payloadSize := 16
+	opsPerSec := float64(b.N) / elapsed.Seconds()
+	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000_000
 
-	// cleanDirectory(temp)
+	BenchmarkReport{
+		TotalOps:                   b.N,
+		PayloadSize:                payloadSize, // 16 bytes
+		TotalBytesTransferred:      float64(b.N * payloadSize),
+		TotalTimeTaken:             elapsed.Seconds(),
+		OpsPerSec:                  opsPerSec,
+		MegaBytesTransferredPerSec: float64(b.N*payloadSize) / elapsed.Seconds(),
+		AverageLatency:             avgLatencyMs,
+	}.Dump("benchmark-parrot-write-with-wal.json")
 	dumpGoroutines()
 }
 
-// BenchmarkMemtable_Write_Without_WAL benchmarks serial writes
+// BenchmarkParrot_Write_Without_WAL benchmarks serial writes
 // with WAL turned off
 //
 //   - sst/memtable size is set to 2MB
 //   - WAL is disabled
 //   - cache & manifest sync() are enabled
-func BenchmarkMemtable_Write_Without_WAL(t *testing.B) {
+func BenchmarkParrot_Write_Without_WAL(b *testing.B) {
 	log.Disable()
-	ctx := t.Context()
+	ctx := b.Context()
 
 	const MEMTABLE_THRESHOLD = 1024 * 2 * 1024
-	temp := "test"
+	temp := b.TempDir()
 	mf := metadata.NewManifest("test", metadata.ManifestOpts{Dir: temp})
 	mf.Load()
 
 	mf.SyncLoop(ctx)
 
-	// overflow first memtable to trigger flush
 	mts := memtable.NewMemtableStore[types.IntKey, *types.IntValue](
 		mf,
 		ctx,
@@ -185,23 +184,28 @@ func BenchmarkMemtable_Write_Without_WAL(t *testing.B) {
 			TurnOnWal:         false,
 			FlushTimeInterval: 1000 * time.Millisecond,
 		})
-	d := types.IntValue{V: 0}
 
-	multiples := 10
-	totalOps := int(MEMTABLE_THRESHOLD/d.SizeOf()) * multiples
-
+	var totalLatencyNs int64
 	start := time.Now()
-
-	for i := range totalOps {
+	b.ResetTimer()
+	for i := range b.N {
 		mts.Write(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
-
-	t.Logf("total ops = %d", totalOps)
 	elapsed := time.Since(start)
-	opsPerSec := float64(totalOps) / elapsed.Seconds()
-	t.Logf("Total time taken: %v, Ops/sec: %.2fM", elapsed, opsPerSec/MILLION)
+	payloadSize := 16
+	opsPerSec := float64(b.N) / elapsed.Seconds()
+	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000_000
 
-	// cleanDirectory(temp)
+	BenchmarkReport{
+		TotalOps:                   b.N,
+		PayloadSize:                payloadSize, // 16 bytes
+		TotalBytesTransferred:      float64(b.N * payloadSize),
+		TotalTimeTaken:             elapsed.Seconds(),
+		OpsPerSec:                  opsPerSec,
+		MegaBytesTransferredPerSec: float64(b.N*payloadSize) / elapsed.Seconds(),
+		AverageLatency:             avgLatencyMs,
+	}.Dump("benchmark-parrot-write-without-wal.json")
 	dumpGoroutines()
 }
 

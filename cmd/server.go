@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/nagarajRPoojari/orange/parrot/utils/log"
 	"github.com/nagarajRPoojari/orange/server"
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,7 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Run the server",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Disable()
 		fmt.Printf("Starting server at %s:%s \n", ServerAddress, ServerPort)
 		p, _ := strconv.ParseInt(ServerPort, 10, 0)
 		server.Start(ServerAddress, p)
