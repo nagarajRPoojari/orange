@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"net"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -39,39 +38,36 @@ func BenchmarkOrange_Write(b *testing.B) {
 	assert.NoError(b, err)
 
 	start := time.Now()
-	var totalLatencyNs int64
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			id := int(time.Now().UnixNano())
 			insertQuery := fmt.Sprintf(`insert value into %s {"_ID": %d, "name": "%s"}`, doc, id, bigChunk)
-			start := time.Now()
 			_, err := processoql(cl, insertQuery)
 			assert.NoError(b, err)
-			elapsed := time.Since(start).Nanoseconds()
-			atomic.AddInt64(&totalLatencyNs, elapsed)
 		}
 	})
 
 	b.StopTimer()
-	elapsed := time.Since(start).Seconds()
+	elapsed := time.Since(start)
 
 	totalBytes := float64(b.N * payloadSize)
 	mbWritten := totalBytes / (1024 * 1024)
-	opsPerSec := float64(b.N) / elapsed
-	mbPerSec := mbWritten / elapsed
-	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
-	avgLatencyMs := avgLatencyNs / 1_000_000
+	opsPerSec := float64(b.N) / elapsed.Seconds()
+	mbPerSec := mbWritten / elapsed.Seconds()
+	avgLatencyNs := float64(elapsed.Nanoseconds()) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000
 
 	BenchmarkReport{
-		TotalOps:                   b.N,
-		PayloadSize:                payloadSize,
-		TotalBytesTransferred:      totalBytes,
-		TotalTimeTaken:             elapsed,
-		OpsPerSec:                  opsPerSec,
-		MegaBytesTransferredPerSec: mbPerSec,
-		AverageLatency:             avgLatencyMs,
+		Name:                      "orange/write",
+		TotalOps:                  b.N,
+		PayloadSizeInBytes:        payloadSize,
+		TotalDataTransferredInMB:  totalBytes,
+		TotalTimeTakenInSec:       elapsed.Seconds(),
+		OpsPerSec:                 opsPerSec,
+		DataTransferredInMBPerSec: mbPerSec,
+		AverageLatencyInMicroSec:  avgLatencyMs,
 	}.Dump("benchmark-orange-write.json")
 }
 
@@ -97,39 +93,36 @@ func BenchmarkOrange_Write_With_JumboPayload(b *testing.B) {
 	assert.NoError(b, err)
 
 	start := time.Now()
-	var totalLatencyNs int64
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			id := int(time.Now().UnixNano())
 			insertQuery := fmt.Sprintf(`insert value into %s {"_ID": %d, "name": "%s"}`, doc, id, bigChunk)
-			start := time.Now()
 			_, err := processoql(cl, insertQuery)
 			assert.NoError(b, err)
-			elapsed := time.Since(start).Nanoseconds()
-			atomic.AddInt64(&totalLatencyNs, elapsed)
 		}
 	})
 
 	b.StopTimer()
-	elapsed := time.Since(start).Seconds()
+	elapsed := time.Since(start)
 
 	totalBytes := float64(b.N * payloadSize)
 	mbWritten := totalBytes / (1024 * 1024)
-	mbPerSec := mbWritten / elapsed
-	opsPerSec := float64(b.N) / elapsed
-	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
-	avgLatencyMs := avgLatencyNs / 1_000_000
+	mbPerSec := mbWritten / elapsed.Seconds()
+	opsPerSec := float64(b.N) / elapsed.Seconds()
+	avgLatencyNs := float64(elapsed.Nanoseconds()) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000
 
 	BenchmarkReport{
-		TotalOps:                   b.N,
-		PayloadSize:                payloadSize,
-		TotalBytesTransferred:      totalBytes,
-		TotalTimeTaken:             elapsed,
-		OpsPerSec:                  opsPerSec,
-		MegaBytesTransferredPerSec: mbPerSec,
-		AverageLatency:             avgLatencyMs,
+		Name:                      "orange/write with jumbo payload",
+		TotalOps:                  b.N,
+		PayloadSizeInBytes:        payloadSize,
+		TotalDataTransferredInMB:  totalBytes,
+		TotalTimeTakenInSec:       elapsed.Seconds(),
+		OpsPerSec:                 opsPerSec,
+		DataTransferredInMBPerSec: mbPerSec,
+		AverageLatencyInMicroSec:  avgLatencyMs,
 	}.Dump("benchmark-orange-write-with-jumbo-payload.json")
 }
 
@@ -156,39 +149,36 @@ func BenchmarkOrange_Read(b *testing.B) {
 	}
 
 	start := time.Now()
-	var totalLatencyNs int64
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			id := RandomKey(0, b.N)
 			readQuery := fmt.Sprintf(`select * from %s where _ID = %d`, doc, id)
-			start := time.Now()
 			_, err := processoql(cl, readQuery)
 			assert.NoError(b, err)
-			elapsed := time.Since(start).Nanoseconds()
-			atomic.AddInt64(&totalLatencyNs, elapsed)
 		}
 	})
 
 	b.StopTimer()
-	elapsed := time.Since(start).Seconds()
+	elapsed := time.Since(start)
 
 	totalBytes := float64(b.N * payloadSize)
 	mbRead := totalBytes / (1024 * 1024)
-	opsPerSec := float64(b.N) / elapsed
-	mbPerSec := mbRead / elapsed
-	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
-	avgLatencyMs := avgLatencyNs / 1_000_000
+	opsPerSec := float64(b.N) / elapsed.Seconds()
+	mbPerSec := mbRead / elapsed.Seconds()
+	avgLatencyNs := float64(elapsed.Nanoseconds()) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000
 
 	BenchmarkReport{
-		TotalOps:                   b.N,
-		PayloadSize:                payloadSize,
-		TotalBytesTransferred:      totalBytes,
-		TotalTimeTaken:             elapsed,
-		OpsPerSec:                  opsPerSec,
-		MegaBytesTransferredPerSec: mbPerSec,
-		AverageLatency:             avgLatencyMs,
+		Name:                      "orange/read",
+		TotalOps:                  b.N,
+		PayloadSizeInBytes:        payloadSize,
+		TotalDataTransferredInMB:  totalBytes,
+		TotalTimeTakenInSec:       elapsed.Seconds(),
+		OpsPerSec:                 opsPerSec,
+		DataTransferredInMBPerSec: mbPerSec,
+		AverageLatencyInMicroSec:  avgLatencyMs,
 	}.Dump("benchmark-orange-read.json")
 }
 

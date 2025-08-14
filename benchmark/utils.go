@@ -9,14 +9,15 @@ import (
 )
 
 type BenchmarkReport struct {
-	TotalOps                   int     `json:"total_ops"`
-	PayloadSize                int     `json:"payload_size"`
-	TotalBytesTransferred      float64 `json:"total_bytes_transferred"`
-	TotalTimeTaken             float64 `json:"total_time_taken_in_seconds"`
-	OpsPerSec                  float64 `json:"ops_per_sec"`
-	MegaBytesTransferredPerSec float64 `json:"megabytes_transferred_per_sec"`
-	AverageLatency             float64 `json:"average_latency_in_ms"`
-	SystemSpecs                SysInfo `json:"system_specs"`
+	Name                      string  `json:"name"`
+	TotalOps                  int     `json:"total_ops"`
+	PayloadSizeInBytes        int     `json:"payload_size_in_bytes"`
+	TotalDataTransferredInMB  float64 `json:"total_data_transferred_in_mb"`
+	TotalTimeTakenInSec       float64 `json:"total_time_taken_in_seconds"`
+	OpsPerSec                 float64 `json:"ops_per_sec"`
+	DataTransferredInMBPerSec float64 `json:"data_transferred_in_mb_per_sec"`
+	AverageLatencyInMicroSec  float64 `json:"average_latency_in_ms"`
+	SystemSpecs               SysInfo `json:"system_specs"`
 }
 
 type SysInfo struct {

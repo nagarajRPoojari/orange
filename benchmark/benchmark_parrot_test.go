@@ -10,7 +10,6 @@ import (
 	"context"
 	"os"
 	"runtime/pprof"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -66,18 +65,14 @@ func BenchmarkParrot_Read(b *testing.B) {
 	}
 
 	time.Sleep(1 * time.Second)
-	var totalLatencyNs int64
 
 	start := time.Now()
 	b.ResetTimer()
 	b.RunParallel(func(p *testing.PB) {
 		for p.Next() {
 			i := RandomKey(0, b.N)
-			start := time.Now()
 			readStatus := db.Get(types.IntKey{K: i})
 			v := types.IntValue{V: int32(i)}
-			elapsed := time.Since(start).Nanoseconds()
-			atomic.AddInt64(&totalLatencyNs, elapsed)
 			if readStatus.Err != nil || *readStatus.Value != v {
 				b.Errorf("Expected %v, got %v", v, readStatus)
 			}
@@ -87,17 +82,19 @@ func BenchmarkParrot_Read(b *testing.B) {
 	payloadSize := 16
 	elapsed := time.Since(start)
 	opsPerSec := float64(b.N) / elapsed.Seconds()
-	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
-	avgLatencyMs := avgLatencyNs / 1_000_000
+	avgLatencyNs := float64(elapsed.Nanoseconds()) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000
+	dataTransfered := float64(b.N * payloadSize / (1024 * 1024))
 
 	BenchmarkReport{
-		TotalOps:                   b.N,
-		PayloadSize:                payloadSize, // 16 bytes
-		TotalBytesTransferred:      float64(b.N * payloadSize),
-		TotalTimeTaken:             elapsed.Seconds(),
-		OpsPerSec:                  opsPerSec,
-		MegaBytesTransferredPerSec: float64(b.N*payloadSize) / elapsed.Seconds(),
-		AverageLatency:             avgLatencyMs,
+		Name:                      "parrot/read",
+		TotalOps:                  b.N,
+		PayloadSizeInBytes:        payloadSize, // 16 bytes
+		TotalDataTransferredInMB:  dataTransfered,
+		TotalTimeTakenInSec:       elapsed.Seconds(),
+		OpsPerSec:                 opsPerSec,
+		DataTransferredInMBPerSec: dataTransfered / elapsed.Seconds(),
+		AverageLatencyInMicroSec:  avgLatencyMs,
 	}.Dump("benchmark-parrot-read.json")
 	dumpGoroutines()
 }
@@ -135,7 +132,6 @@ func BenchmarkParrot_Write_With_WAL(b *testing.B) {
 			FlushTimeInterval:   1000 * time.Millisecond,
 		})
 
-	var totalLatencyNs int64
 	start := time.Now()
 	b.ResetTimer()
 	for i := range b.N {
@@ -144,17 +140,19 @@ func BenchmarkParrot_Write_With_WAL(b *testing.B) {
 	elapsed := time.Since(start)
 	payloadSize := 16
 	opsPerSec := float64(b.N) / elapsed.Seconds()
-	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
-	avgLatencyMs := avgLatencyNs / 1_000_000
+	avgLatencyNs := float64(elapsed.Nanoseconds()) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000
+	dataTransfered := float64(b.N * payloadSize / (1024 * 1024))
 
 	BenchmarkReport{
-		TotalOps:                   b.N,
-		PayloadSize:                payloadSize, // 16 bytes
-		TotalBytesTransferred:      float64(b.N * payloadSize),
-		TotalTimeTaken:             elapsed.Seconds(),
-		OpsPerSec:                  opsPerSec,
-		MegaBytesTransferredPerSec: float64(b.N*payloadSize) / elapsed.Seconds(),
-		AverageLatency:             avgLatencyMs,
+		Name:                      "parrot/write with WAL",
+		TotalOps:                  b.N,
+		PayloadSizeInBytes:        payloadSize, // 16 bytes
+		TotalDataTransferredInMB:  dataTransfered,
+		TotalTimeTakenInSec:       elapsed.Seconds(),
+		OpsPerSec:                 opsPerSec,
+		DataTransferredInMBPerSec: dataTransfered / elapsed.Seconds(),
+		AverageLatencyInMicroSec:  avgLatencyMs,
 	}.Dump("benchmark-parrot-write-with-wal.json")
 	dumpGoroutines()
 }
@@ -185,26 +183,28 @@ func BenchmarkParrot_Write_Without_WAL(b *testing.B) {
 			FlushTimeInterval: 1000 * time.Millisecond,
 		})
 
-	var totalLatencyNs int64
 	start := time.Now()
 	b.ResetTimer()
 	for i := range b.N {
 		mts.Write(types.IntKey{K: i}, &types.IntValue{V: int32(i)})
 	}
+
 	elapsed := time.Since(start)
 	payloadSize := 16
 	opsPerSec := float64(b.N) / elapsed.Seconds()
-	avgLatencyNs := float64(totalLatencyNs) / float64(b.N)
-	avgLatencyMs := avgLatencyNs / 1_000_000
+	avgLatencyNs := float64(elapsed.Nanoseconds()) / float64(b.N)
+	avgLatencyMs := avgLatencyNs / 1_000
+	dataTransfered := float64(b.N * payloadSize / (1024 * 1024))
 
 	BenchmarkReport{
-		TotalOps:                   b.N,
-		PayloadSize:                payloadSize, // 16 bytes
-		TotalBytesTransferred:      float64(b.N * payloadSize),
-		TotalTimeTaken:             elapsed.Seconds(),
-		OpsPerSec:                  opsPerSec,
-		MegaBytesTransferredPerSec: float64(b.N*payloadSize) / elapsed.Seconds(),
-		AverageLatency:             avgLatencyMs,
+		Name:                      "parrot/write without WAL",
+		TotalOps:                  b.N,
+		PayloadSizeInBytes:        payloadSize, // 16 bytes
+		TotalDataTransferredInMB:  dataTransfered,
+		TotalTimeTakenInSec:       elapsed.Seconds(),
+		OpsPerSec:                 opsPerSec,
+		DataTransferredInMBPerSec: dataTransfered / elapsed.Seconds(),
+		AverageLatencyInMicroSec:  avgLatencyMs,
 	}.Dump("benchmark-parrot-write-without-wal.json")
 	dumpGoroutines()
 }

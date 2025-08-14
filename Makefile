@@ -140,10 +140,6 @@ clean:
 
 .PHONY: benchmark-all benchmark-parrot benchmark-orange
 
-benchmark-all:
-	@echo "Running benchmark on both parrot & orange"
-	go test -run=^$ -bench=. ./benchmark
-
 benchmark-parrot:
 	@echo "Running parrot benchmark..."
 	go test -run=^$  -bench='^BenchmarkParrot_' ./benchmark
