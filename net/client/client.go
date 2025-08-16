@@ -20,7 +20,6 @@ type Client struct {
 
 func NewClient(addr string, port int64, retry ...int) *Client {
 	address := fmt.Sprintf("%s:%d", addr, port)
-	fmt.Println("ADDR: ", address)
 
 	// Default retry count
 	retries := 1
