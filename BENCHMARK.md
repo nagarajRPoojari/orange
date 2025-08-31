@@ -11,16 +11,29 @@ parrot/write without WAL         |16557213  |16       |180.96  |11889959.16  |0.
 ```
 
 1. all `write` does random key insertion with very less likely overriding existing keys.
-2. all  `reads` are kep random as sequential reads might not be robust enough because of caching advantage which is less likely to happen in real world.
+2. all  `reads` are kept random as sequential reads might not be robust enough because of caching advantage which is less likely to happen in real world.
 3. `parrot` provides very high read throughput of `~6.6M`, write throughput of `~1.8M` with WAL & `~11.8M` without WAL.
 4. significant decrease in performance is visible in `orange ` because of added `query-parser` & `network` layer.
 
+> [!NOTE]  
+> orange is a lightweight, fast, distributed noSQL db.
+> It draws inspiration from systems like Cassandra, MongoDB, LevelDB, RocksDB, Pebble, CockroachDB, and many others.
+
 ### Run benchmark
 ```
+# benchmark parrot
 make benchmark-parrot
+```
+```
+# benchmark orange standalone instance
+orange server --port 8000
+
 make benchmark-orange
 ```
+
 #### view report
 ```
 go run main.go report
 ```
+> [!WARNING]  
+> report generated in benchmark directory might be corrupted json file, if you see nothing after `go run main.go report`, please fix corrupted json before trying again
