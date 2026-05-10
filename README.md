@@ -130,3 +130,19 @@ orange server --port 8000 --address localhost
 orange repl --port  8000 --address localhost
 ```
 
+# If you use this project, please cite
+```
+@software{poojari_2026_20106947,
+  author       = {Poojari, Nagaraj},
+  title        = {OrangeDB: A Dual-Ring Sharded Database
+                   Architecture for Scalable and Leaderless
+                   Replication
+                  },
+  month        = may,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {v1.0.2},
+  doi          = {10.5281/zenodo.20106947},
+  url          = {https://doi.org/10.5281/zenodo.20106947},
+}
+```
