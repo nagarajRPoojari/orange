@@ -4,7 +4,7 @@ authors:
 - family-names: "Poojari"
   given-names: "Nagaraj"
   orcid: "https://orcid.org/0009-0006-1145-8772"
-title: "orange"
+title: "OrangeDB: A Dual-Ring Sharded Database Architecture for Scalable and Leaderless Replication"
 version: 1.0.0
 date-released: 2026-05-10
 url: "https://github.com/nagarajRPoojari/orange"
